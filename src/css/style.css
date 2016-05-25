@@ -1,0 +1,48 @@
+.treeTable {
+	display: inline-block;
+}
+
+.ohmd-rootContainer {
+	display: inline-block;
+	vertical-align: top;
+}
+#ohmd-root {
+	position: relative;
+}
+
+
+.ohmd-hidden {
+	display: none;
+}
+.ohmd-chkCell {
+	text-align: center;
+}
+.ohmd-container {
+	background: rgb(255,255,255);
+	border: 1px solid rgb(240,240,240);
+	box-shadow: 0px 5px 30px rgba(0,0,0,0.3);
+	font-size: 16px;
+	min-height: 100px;
+	overflow: hidden;
+	position: absolute;
+	resize: both;
+}
+.ohmd-title {
+	background-color: rgb(240,240,240);
+	height: 19px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.ohmd-value {
+	font-weight: bold;
+	text-align: center;
+}
+.ohmd-canvas {
+	bottom: 10px;
+	left: 0;
+	overflow: hidden;
+	position: absolute;
+	right: 0;
+	top: 19px;
+}

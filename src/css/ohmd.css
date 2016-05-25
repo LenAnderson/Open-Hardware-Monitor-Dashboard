@@ -1,0 +1,171 @@
+html, body {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	padding: 0;
+}
+body {
+	background-color: rgb(245, 245, 245);
+	font-family: Helvetica, sans-serif;
+}
+ul {
+	margin: 0;
+	padding: 0;
+}
+
+.hidden {
+	display: none;
+}
+
+input.long {
+	width: 500px;
+}
+
+${include: md.css}
+
+#app {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	transition: 400ms ease-in-out;
+}
+
+#appbar {
+	background-color: rgb(1, 87, 155);
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+	color: rgb(255,255,255);
+	z-index: 2;
+}
+#new {
+	box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+	background-color: rgb(224, 224, 224);
+	border-radius: 50%;
+	cursor: pointer;
+	font-size: 47px;
+	font-weight: bold;
+	height: 50px;
+	position: absolute;
+	right: 10px;
+	text-align: center;
+	top: 10px;
+	transition: 200ms;
+	width: 50px;
+	z-index: 2;
+}
+#new:hover {
+	box-shadow: 0 4px 30px rgba(0,0,0,0.16);
+	background-color: rgb(238, 238, 238);
+	transform: translate3d(0, -1px, 0);
+}
+
+
+#widgets {
+	position: relative;
+}
+
+.widget {
+	background-color: rgb(255,255,255);
+	box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+	min-height: 40px;
+	overflow: hidden;
+	position: absolute;
+	min-width: 60px;
+}
+.widget.top {
+	z-index: 1;
+}
+.widget .header {
+	/*background-color: rgb(1, 87, 155);*/
+	/*color: rgb(255,255,255);*/
+	cursor: move;
+	font-weight: bold;
+	height: 20px;
+	margin-bottom: 5px;
+	position: relative;
+}
+.widget .header > .title {
+	height: 18px;
+	overflow: hidden;
+	padding: 2px 50px 0 10px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.widget .header > .actions {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+.widget .header > .actions > li {
+	cursor: pointer;
+	display: inline-block;
+	height: 20px;
+	margin-left: 2px;
+	width: 20px;
+}
+.widget .header > .actions > .close {
+	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==");
+}
+.widget .header > .actions > .config {
+	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==");
+}
+
+.widget .canvas {
+	bottom: 0;
+	left: 0;
+	position: absolute;
+	right: 0;
+	top: 25px;
+}
+
+.widget .value {
+	text-align: right;
+}
+.widget .value > .leading {
+	opacity: 0;
+}
+
+.widget .resizer {
+	background-color: rgb(140,140,140);
+	bottom: 0;
+	cursor: se-resize;
+	height: 10px;
+	position: absolute;
+	right: 0;
+	width: 26px;
+	background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(255, 255, 255) 1px, rgb(255, 255, 255) 3px);
+	transform: rotate(-45deg) translateX(4px) translateY(6px);
+}
+
+.shake {
+	animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+	transform: translate3d(0, 0, 0);
+	backface-visibility: hidden;
+	perspective: 1000px;
+}
+select.error { border-color: red; }
+
+
+
+
+
+
+
+@keyframes shake {
+	10%, 90% {
+		transform: translate3d(-1px, 0, 0);
+	}
+
+	20%, 80% {
+		transform: translate3d(2px, 0, 0);
+	}
+
+	30%, 50%, 70% {
+		transform: translate3d(-4px, 0, 0);
+	}
+
+	40%, 60% {
+		transform: translate3d(4px, 0, 0);
+	}
+}
