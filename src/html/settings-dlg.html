@@ -1,0 +1,39 @@
+<div class="dialog" id="dlg-settings">
+	<div class="height"></div>
+	<div class="content">
+		<div class="title">Settings</div>
+		<div>
+			<div>
+				<label for="dlg-settings-grid">
+					<input type="checkbox" id="dlg-settings-grid" placeholder="Snap to Grid" checked> Snap to Grid
+				</label>
+			</div>
+		</div>
+		<div>
+			<div class="input">
+				<input type="number" id="dlg-settings-gridSize" placeholder="Grid Size" value="10">
+			</div>
+		</div>
+		<div>
+			<div>
+				<label for="dlg-settings-gridShow">
+					<input type="checkbox" id="dlg-settings-gridShow" placeholder="Show Grid" checked> Show Grid
+				</label>
+			</div>
+		</div>
+		<div>
+			<div class="input">
+				<input type="text" id="dlg-settings-gridColor" placeholder="Grid Color" value="#000000">
+				<input type="color" id="dlg-settings-gridColor-picker" value="#000000">
+			</div>
+			<div class="input">
+				<input type="number" min="0" max="100" id="dlg-settings-gridColor-opacity" placeholder="Opacity" value="50">
+			</div>
+		</div>
+		
+		<div class="actions">
+			<button id="dlg-settings-ok">OK</button>
+			<button id="dlg-settings-cancel">Cancel</button>
+		</div>
+	</div>
+</div>

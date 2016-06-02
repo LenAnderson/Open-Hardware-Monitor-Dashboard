@@ -261,14 +261,14 @@ var Widget = (function(arg_config) {
 	function setSize(size) {
 		config.size = size;
 		raiseConfigEvent();
-		element.style.width = size.width + 'px';
-		element.style.height = size.height + 'px';
+		element.style.width = (Config.grid?Math.round(size.width/Config.gridSize)*Config.gridSize : size.width) + 'px';
+		element.style.height = (Config.grid?Math.round(size.height/Config.gridSize)*Config.gridSize : size.height) + 'px';
 	}
 	function setPosition(position) {
 		config.position = position;
 		raiseConfigEvent();
-		element.style.left = position.left + 'px';
-		element.style.top = position.top + 'px';
+		element.style.left = (Config.grid?Math.round(position.left/Config.gridSize)*Config.gridSize : position.left) + 'px';
+		element.style.top = (Config.grid?Math.round(position.top/Config.gridSize)*Config.gridSize : position.top) + 'px';
 	}
 	
 	function updateValue() {

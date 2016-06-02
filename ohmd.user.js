@@ -2,7 +2,7 @@
 // @name         Open Hardware Monitor - Dashboard
 // @banesoace    https://github.com/LenAnderson/
 // @downloadURL  https://github.com/LenAnderson/Open-Hardware-Monitor-Dashboard/raw/master/ohmd.user.js
-// @version      0.1
+// @version      0.2
 // @author       LenAnderson
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
@@ -398,6 +398,40 @@ var md = {
 		}
 	}
 }
+		var Config = {
+	widgets: [],
+	grid: false,
+	gridSize: 10,
+	showGrid: false,
+	gridColor: 'rgba(0,0,0,0.75)',
+	
+	save: function() {
+		localStorage.setItem('ohmd-config', JSON.stringify(this));
+	},
+	load: function() {
+		var config;
+		try {
+			config = JSON.parse(localStorage.getItem('ohmd-config'));
+		} catch (ex) {}
+		if (config) {
+			if (config.widgets && config.widgets instanceof Array) {
+				this.widgets = config.widgets;
+			}
+			if (config.grid && typeof config.grid == 'boolean') {
+				this.grid = config.grid;
+			}
+			if (config.gridSize && typeof config.gridSize == 'number') {
+				this.gridSize = parseInt(config.gridSize);
+			}
+			if (config.showGrid && typeof config.showGrid == 'boolean') {
+				this.showGrid = config.showGrid;
+			}
+			if (config.gridColor) {
+				this.gridColor = config.gridColor;
+			}
+		}
+	}
+}
 		var Data = (function() {
 	//
 	// vars
@@ -690,14 +724,14 @@ var md = {
 	function setSize(size) {
 		config.size = size;
 		raiseConfigEvent();
-		element.style.width = size.width + 'px';
-		element.style.height = size.height + 'px';
+		element.style.width = (Config.grid?Math.round(size.width/Config.gridSize)*Config.gridSize : size.width) + 'px';
+		element.style.height = (Config.grid?Math.round(size.height/Config.gridSize)*Config.gridSize : size.height) + 'px';
 	}
 	function setPosition(position) {
 		config.position = position;
 		raiseConfigEvent();
-		element.style.left = position.left + 'px';
-		element.style.top = position.top + 'px';
+		element.style.left = (Config.grid?Math.round(position.left/Config.gridSize)*Config.gridSize : position.left) + 'px';
+		element.style.top = (Config.grid?Math.round(position.top/Config.gridSize)*Config.gridSize : position.top) + 'px';
 	}
 	
 	function updateValue() {
@@ -1024,6 +1058,87 @@ var md = {
 		updateSensors: updateSensors
 	};
 });
+		var SettingsDlg = (function() {
+	//
+	// nodes
+	//
+	var _grid;
+	var _gridSize;
+	var _gridColor;
+	var _gridColorPicker;
+	var _gridColorOpacity;
+	var _gridShow;
+	
+	//
+	// vars
+	//
+	var element;
+	var dlg;
+	
+	
+	//
+	// methods
+	//
+	
+	// constructor
+	function SettingsDlg() {
+		element = document.createElement('div');
+		element.innerHTML = '<div class=\"dialog\" id=\"dlg-settings\"><div class=\"height\"></div><div class=\"content\"><div class=\"title\">Settings</div><div><div><label for=\"dlg-settings-grid\"><input type=\"checkbox\" id=\"dlg-settings-grid\" placeholder=\"Snap to Grid\" checked> Snap to Grid</label></div></div><div><div class=\"input\"><input type=\"number\" id=\"dlg-settings-gridSize\" placeholder=\"Grid Size\" value=\"10\"></div></div><div><div><label for=\"dlg-settings-gridShow\"><input type=\"checkbox\" id=\"dlg-settings-gridShow\" placeholder=\"Show Grid\" checked> Show Grid</label></div></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-settings-gridColor\" placeholder=\"Grid Color\" value=\"#000000\"><input type=\"color\" id=\"dlg-settings-gridColor-picker\" value=\"#000000\"></div><div class=\"input\"><input type=\"number\" min=\"0\" max=\"100\" id=\"dlg-settings-gridColor-opacity\" placeholder=\"Opacity\" value=\"50\"></div></div><div class=\"actions\"><button id=\"dlg-settings-ok\">OK</button><button id=\"dlg-settings-cancel\">Cancel</button></div></div></div>';
+		$('#app').appendChild(element);
+		dlg = element.children[0];
+		
+		_grid = dlg.$('#dlg-settings-grid');
+		_gridSize = dlg.$('#dlg-settings-gridSize');
+		_gridColor = dlg.$('#dlg-settings-gridColor');
+		_gridColorPicker = dlg.$('#dlg-settings-gridColor-picker');
+		_gridColorOpacity = dlg.$('#dlg-settings-gridColor-opacity');
+		_gridShow = dlg.$('#dlg-settings-gridShow');
+		
+		dlg.$('#dlg-settings-ok').addEventListener('click', ok);
+		dlg.$('#dlg-settings-cancel').addEventListener('click', function() {
+			dlg.hide();
+		});
+		
+		_gridColor.addEventListener('change', function() {
+			_gridColorPicker.value = this.value;
+		});
+		_gridColorPicker.addEventListener('change', function() {
+			_gridColor.value = this.value;
+		});
+	}
+	
+	function show(evt) {
+		var colorParts = Config.gridColor.match(/[0-9\.]+/g);
+		_grid.checked = Config.grid;
+		_gridSize.value = Config.gridSize;
+		_gridColor.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
+		_gridColorPicker.value = _gridColor.value;
+		_gridColorOpacity.value = parseFloat(colorParts[3])*100;
+		_gridShow.checked = Config.showGrid;
+		dlg.show(evt);
+	}
+	
+	function ok() {
+		var parts = _gridColor.value.substring(1).match(/.{2}/g);
+		var opacity = _gridColorOpacity.value;
+		var gridColor = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
+		module.raiseEvent('change', {
+			grid: _grid.checked,
+			gridSize: parseInt(_gridSize.value),
+			gridColor: gridColor,
+			showGrid: _gridShow.checked
+		});
+		dlg.hide();
+	}
+	
+	
+	
+	SettingsDlg();
+	var module;
+	return module = {
+		show: show
+	};
+});
 		var OHMDashboard = (function() {
 	//
 	// properties
@@ -1033,6 +1148,7 @@ var md = {
 	var _widgets = [];
 	var sensors;
 	var widgetDlg;
+	var settingsDlg;
 	
 	
 	//
@@ -1041,12 +1157,16 @@ var md = {
 	
 	// constructor
 	function OHMDashboard() {
-		document.body.parentNode.innerHTML = '<head><title>OHM Dashboard</title><style type=\"text/css\">html, body {height: 100%;margin: 0;overflow: hidden;padding: 0;}body {background-color: rgb(245, 245, 245);font-family: Helvetica, sans-serif;}ul {margin: 0;padding: 0;}.hidden {display: none;}input.long {width: 500px;}.dialog {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  text-align: center;  top: 0;  transition: 250ms;  white-space: nowrap;  z-index: 5;}.dialog .height {  height: 100%;  display: inline-block;  vertical-align: middle;  width: 0;}.dialog .content {  box-shadow: 0 19px 60px rgba(0, 0, 0, 0.3);  box-sizing: border-box;  background: #ffffff;  display: inline-block;  max-height: 100%;  overflow-x: hidden;  overflow-y: auto;  padding: 17px;  text-align: left;  vertical-align: middle;  white-space: normal;}.dialog .content .title {  color: #616161;  font-size: 1.25em;  font-weight: bold;  margin: 0.5em 0;}.dialog .content .actions {  text-align: right;}.dialog.preactive {  display: block;}.dialog.active {  background-color: rgba(0, 0, 0, 0.3);}.dialog.active .content {  transform: translate(0, 0) scale(1) !important;  transition: all 0.4s ease-in-out;}.menu {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms linear;  z-index: 4;}.menu .content {  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.25);  background-color: #ffffff;  bottom: 0;  left: 0;  position: absolute;  top: 0;  transform: translatex(-100%);  transition: all 0.4s ease-in-out;}.menu .content .title {  background-color: rgb(1, 87, 155);  color: #ffffff;  font-size: 1.25em;  font-weight: normal;  margin: 0 0 0.5em 0;  padding: 1em 0.5em;}.menu .content .items {margin: 0;padding: 0;}.menu .content .items .item {  margin: 0.5em 0;  overflow: hidden;  position: relative;}.menu .content .items .item .item-link, .menu .content .items .item .item-link * {  cursor: pointer;}.menu .content .items .item .item-link {  display: block;  padding: 1em 1.25em;  transition: 250ms;}.menu .content .items .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.menu.preactive {  display: block;}.menu.active {  background-color: rgba(0, 0, 0, 0.3);}.menu.active .content {  transform: translatex(0);}.input {  display: inline-block;  font-size: 1em;  position: relative;}.input input {  border: none;  border-bottom: 1px solid #e0e0e0;  color: #616161;  font: inherit;  margin: 1em 0 0 0;  outline: none;  transition: 250ms ease-in-out;}.input input:focus {  border-bottom-color: rgb(1, 87, 155);}.input input:invalid {  border-color: #e51c23;}.input .placeholder {  position: absolute;  top: 1em;  left: 0;  color: #bdbdbd;  transition: 250ms ease-in-out;}.input.focus .placeholder {  top: 0;  font-size: 0.75em !important;  color: rgb(1, 87, 155);}.input.has-content .placeholder,.input.no-placeholder .placeholder {  top: 0;  font-size: 0.75em !important;}.ripple {  content: \"\";  background-color: rgba(0, 0, 0, 0.4);  border-radius: 50%;  display: block;  height: 500px;  left: 0;  opacity: 1;  position: absolute;  top: 0;  transform: scale(0);  width: 500px;}.clicked .ripple {  opacity: 0;  transform: scale(1);  transition: transform 550ms ease-in-out, opacity 550ms ease-in-out;}button,input[type=\"button\"],input[type=\"submit\"] {  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);  background-color: rgb(1, 87, 155);  border: none;  color: white;  cursor: pointer;  font: inherit;  margin: 1em;  outline: none;  overflow: hidden;  padding: 0.5em;  position: relative;  transition: 200ms linear;  vertical-align: bottom;  width: 10em;}button:hover,input[type=\"button\"]:hover,input[type=\"submit\"]:hover {  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);  background-color: rgb(2, 119, 189);  transform: translate3d(0, -1px, 0);}.toasts {list-style: none;margin: 0;padding: 0;position: absolute;right: 2.5em;top: 2.5em;width: 20em;}.toast {background-color: rgb(255,255,255);border-top: 0.5em solid rgb(1, 87, 155);box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);box-sizing: border-box;margin: 0;opacity: 0;padding: 0.5em;}.toast.preactive {transition: 200ms ease-in-out;}.toast.active {margin-top: 0.5em !important;opacity: 1;}.toast > .title {font-weight: bold;}.toast > .info {font-size: small;}.toolbar {  height: 2.5em;  position: relative;}.toolbar .sect {  height: 100%;  position: absolute;  top: 0;}.toolbar .sect .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  margin: 0 0.5em;  overflow: hidden;  position: relative;}.toolbar .sect .item .item-link {  box-sizing: border-box;  color: inherit;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.45em 0.5em 0.25em 0.5em;  text-decoration: none;}.toolbar .sect .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.toolbar .sect.primary {  left: 0;}.toolbar .sect.secondary {  right: 0;}.tabbar {  height: 2.5em;  position: relative;}.tabbar .items {  height: 100%;}.tabbar .items .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  overflow: hidden;  position: relative;}.tabbar .items .item .item-link {  background-color: #03a9f4;  box-sizing: border-box;  color: #ffffff;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.25em 0.5em 0.375em 0.5em;  text-align: center;}.tabbar .marker {  background-color: #ffeb3b;  bottom: 0;  height: 0.25em;  position: absolute;  transition: 400ms ease-in-out;}.tabbar.bottom .items .item .item-link {  padding: 0.375em 0.5em 0.25em 0.5em;}.tabbar.bottom .marker {  bottom: auto;  top: 0;}#app {position: absolute;top: 0;bottom: 0;right: 0;left: 0;transition: 400ms ease-in-out;}#appbar {background-color: rgb(1, 87, 155);box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);color: rgb(255,255,255);z-index: 2;}#new {box-shadow: 0 3px 10px rgba(0,0,0,0.16);background-color: rgb(224, 224, 224);border-radius: 50%;cursor: pointer;font-size: 47px;font-weight: bold;height: 50px;position: absolute;right: 10px;text-align: center;top: 10px;transition: 200ms;width: 50px;z-index: 2;}#new:hover {box-shadow: 0 4px 30px rgba(0,0,0,0.16);background-color: rgb(238, 238, 238);transform: translate3d(0, -1px, 0);}#widgets {position: relative;}.widget {background-color: rgb(255,255,255);box-shadow: 0 1px 4px rgba(0,0,0,0.16);min-height: 40px;overflow: hidden;position: absolute;min-width: 60px;}.widget.top {z-index: 1;}.widget .header {/*background-color: rgb(1, 87, 155);*//*color: rgb(255,255,255);*/cursor: move;font-weight: bold;height: 20px;margin-bottom: 5px;position: relative;}.widget .header > .title {height: 18px;overflow: hidden;padding: 2px 50px 0 10px;text-overflow: ellipsis;white-space: nowrap;}.widget .header > .actions {position: absolute;right: 0;top: 0;}.widget .header > .actions > li {cursor: pointer;display: inline-block;height: 20px;margin-left: 2px;width: 20px;}.widget .header > .actions > .close {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.widget .header > .actions > .config {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.widget .canvas {bottom: 0;left: 0;position: absolute;right: 0;top: 25px;}.widget .value {text-align: right;}.widget .value > .leading {opacity: 0;}.widget .resizer {background-color: rgb(140,140,140);bottom: 0;cursor: se-resize;height: 10px;position: absolute;right: 0;width: 26px;background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(255, 255, 255) 1px, rgb(255, 255, 255) 3px);transform: rotate(-45deg) translateX(4px) translateY(6px);}.shake {animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;transform: translate3d(0, 0, 0);backface-visibility: hidden;perspective: 1000px;}select.error { border-color: red; }@keyframes shake {10%, 90% {transform: translate3d(-1px, 0, 0);}20%, 80% {transform: translate3d(2px, 0, 0);}30%, 50%, 70% {transform: translate3d(-4px, 0, 0);}40%, 60% {transform: translate3d(4px, 0, 0);}}</style></head><body><div id=\"app\"><div id=\"new\" title=\"Add Widget\">+</div><div id=\"widgets\"></div></div><div class=\"menu\" id=\"prefs\"><div class=\"content\"><div class=\"title\">OHM Dashboard &ndash; Preferences</div><ul class=\"items\"><li class=\"item\"><label for=\"prefs-refreshRate\" class=\"item-link\"><div class=\"input\"><input type=\"number\" placeholder=\"Refresh Rate\" id=\"prefs-refreshRate\" /></div></label></li></ul></div></div></body>';
+		document.body.parentNode.innerHTML = '<head><title>OHM Dashboard</title><link rel=\"shortcut icon\" type=\"image/png\" href=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURRIRDRMSExQUFBUVFRcXFxoZER8dER8dExgYGBkZGRkYGhoaGhsbGxscHR8eGxwcHB0dHR0dHh4eHR0eHh4fIiIfFyMiHCgmGiwpHS0rHy4sHjw3GTw3GiIjJCYlISQkJCUkJSYmJicnKCgnIignJSkoISkoJS8uJygoKCkpKSgpLCoqLiwsLCwtLS4uLi4vLy8vMDAtITEwKTw4IjAwMDAxMzIzMjIyMzU1NTU1NzY2NzQ3Pzk5OTo7Ozo6PDw8PDw8PT4/RkA5GktCHlhRMVtWNlhSOnhsLkFBQUJCQkNDQ0RERERFRUdGR0hISElJSUtLS01NTExMTU5OTlVUSlxaTVBQUFFSUlNSU1NVVVVVVVZVVlVVV1ZWVlhYWFpZWlpaWVpaWlpaW1xcXF5eXmpjQGBgYGJhYWBgY2JiYmNjY2RkZGVlZWZlZmdnZ2hnZ2pqamtra25ubm9vb3Bvb3FxcXJycnJydXd4d3p6enx7e39/f7SXEICBgYSEhIWFhYaGhomJiYqLioyMjI6Pjo+Pj5GRk5OTkZSUlJaWlpiYmJmYmZubm56enZ+fn6CgoKKhoaKioqSjo6SjpKampqmpqaurq6usrK6urq+vr6+wsLCwsLCwsrCws7KysLGysbKysrOzs7KytLSztLS0tLS0tba2trO0ubi4t7i4uLq6urm6vLy8vL6+vri6w7/AwMDAwMHBwcTExMbGxsfGx8rKyszMzM3NzdHR0dLS0tPS09XV1dfW19nZ2dra2tzc3N/f4eHh4ePl4+jo6PLx8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEuvGkoAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAABG0lEQVQoUwEQAe/+AHlwbGdjXlhSTUlAOTQyJL4AclpXUEtIQDw4Ny8qJ0MxqwB0X1daZmJZU01IPTAoMxqdAHNeYLG7r6WVjIR/dSsZGKIAc11vwcS9t7Cek4uANBMSowByW228w7q0qpaNiH0sEQ2hAHFYa7nCtqyblIyGeygTDKAAblZptb+0pZWOioR6IBAJoABqUmSwuK2ZkouHgnggDwigAGROYaWzppeQiYN+dh8MBKAAYkxemK2alY+IgX11HwsDoABcQU+RmI6KhX55d2gUCgKgAFVGO01RSj86LygmIxYOAZ8AZXxENS0pIiEdJRwbQhsFnABUR0U+OjYuKSAeFxUHBgCZAMCup6mopqalpKKdnJycmbL69GWV2M35cAAAAABJRU5ErkJggg==\" /><style type=\"text/css\">html, body {height: 100%;margin: 0;overflow: hidden;padding: 0;}body {background-color: rgb(245, 245, 245);font-family: Helvetica, sans-serif;}ul {margin: 0;padding: 0;}.hidden {display: none;}input.long {width: 500px;}.dialog {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  text-align: center;  top: 0;  transition: 250ms;  white-space: nowrap;  z-index: 5;}.dialog .height {  height: 100%;  display: inline-block;  vertical-align: middle;  width: 0;}.dialog .content {  box-shadow: 0 19px 60px rgba(0, 0, 0, 0.3);  box-sizing: border-box;  background: #ffffff;  display: inline-block;  max-height: 100%;  overflow-x: hidden;  overflow-y: auto;  padding: 17px;  text-align: left;  vertical-align: middle;  white-space: normal;}.dialog .content .title {  color: #616161;  font-size: 1.25em;  font-weight: bold;  margin: 0.5em 0;}.dialog .content .actions {  text-align: right;}.dialog.preactive {  display: block;}.dialog.active {  background-color: rgba(0, 0, 0, 0.3);}.dialog.active .content {  transform: translate(0, 0) scale(1) !important;  transition: all 0.4s ease-in-out;}.menu {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms linear;  z-index: 4;}.menu .content {  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.25);  background-color: #ffffff;  bottom: 0;  left: 0;  position: absolute;  top: 0;  transform: translatex(-100%);  transition: all 0.4s ease-in-out;}.menu .content .title {  background-color: rgb(1, 87, 155);  color: #ffffff;  font-size: 1.25em;  font-weight: normal;  margin: 0 0 0.5em 0;  padding: 1em 0.5em;}.menu .content .items {margin: 0;padding: 0;}.menu .content .items .item {  margin: 0.5em 0;  overflow: hidden;  position: relative;}.menu .content .items .item .item-link, .menu .content .items .item .item-link * {  cursor: pointer;}.menu .content .items .item .item-link {  display: block;  padding: 1em 1.25em;  transition: 250ms;}.menu .content .items .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.menu.preactive {  display: block;}.menu.active {  background-color: rgba(0, 0, 0, 0.3);}.menu.active .content {  transform: translatex(0);}.input {  display: inline-block;  font-size: 1em;  position: relative;}.input input {  border: none;  border-bottom: 1px solid #e0e0e0;  color: #616161;  font: inherit;  margin: 1em 0 0 0;  outline: none;  transition: 250ms ease-in-out;}.input input:focus {  border-bottom-color: rgb(1, 87, 155);}.input input:invalid {  border-color: #e51c23;}.input .placeholder {  position: absolute;  top: 1em;  left: 0;  color: #bdbdbd;  transition: 250ms ease-in-out;}.input.focus .placeholder {  top: 0;  font-size: 0.75em !important;  color: rgb(1, 87, 155);}.input.has-content .placeholder,.input.no-placeholder .placeholder {  top: 0;  font-size: 0.75em !important;}.ripple {  content: \"\";  background-color: rgba(0, 0, 0, 0.4);  border-radius: 50%;  display: block;  height: 500px;  left: 0;  opacity: 1;  position: absolute;  top: 0;  transform: scale(0);  width: 500px;}.clicked .ripple {  opacity: 0;  transform: scale(1);  transition: transform 550ms ease-in-out, opacity 550ms ease-in-out;}button,input[type=\"button\"],input[type=\"submit\"] {  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);  background-color: rgb(1, 87, 155);  border: none;  color: white;  cursor: pointer;  font: inherit;  margin: 1em;  outline: none;  overflow: hidden;  padding: 0.5em;  position: relative;  transition: 200ms linear;  vertical-align: bottom;  width: 10em;}button:hover,input[type=\"button\"]:hover,input[type=\"submit\"]:hover {  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);  background-color: rgb(2, 119, 189);  transform: translate3d(0, -1px, 0);}.toasts {list-style: none;margin: 0;padding: 0;position: absolute;right: 2.5em;top: 2.5em;width: 20em;}.toast {background-color: rgb(255,255,255);border-top: 0.5em solid rgb(1, 87, 155);box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);box-sizing: border-box;margin: 0;opacity: 0;padding: 0.5em;}.toast.preactive {transition: 200ms ease-in-out;}.toast.active {margin-top: 0.5em !important;opacity: 1;}.toast > .title {font-weight: bold;}.toast > .info {font-size: small;}.toolbar {  height: 2.5em;  position: relative;}.toolbar .sect {  height: 100%;  position: absolute;  top: 0;}.toolbar .sect .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  margin: 0 0.5em;  overflow: hidden;  position: relative;}.toolbar .sect .item .item-link {  box-sizing: border-box;  color: inherit;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.45em 0.5em 0.25em 0.5em;  text-decoration: none;}.toolbar .sect .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.toolbar .sect.primary {  left: 0;}.toolbar .sect.secondary {  right: 0;}.tabbar {  height: 2.5em;  position: relative;}.tabbar .items {  height: 100%;}.tabbar .items .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  overflow: hidden;  position: relative;}.tabbar .items .item .item-link {  background-color: #03a9f4;  box-sizing: border-box;  color: #ffffff;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.25em 0.5em 0.375em 0.5em;  text-align: center;}.tabbar .marker {  background-color: #ffeb3b;  bottom: 0;  height: 0.25em;  position: absolute;  transition: 400ms ease-in-out;}.tabbar.bottom .items .item .item-link {  padding: 0.375em 0.5em 0.25em 0.5em;}.tabbar.bottom .marker {  bottom: auto;  top: 0;}#app {position: absolute;top: 0;bottom: 0;right: 0;left: 0;transition: 400ms ease-in-out;}#app.grid {background-color: rgb(0,0,0);background-image: repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) 10px),repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) 10px);}#appbar {background-color: rgb(1, 87, 155);box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);color: rgb(255,255,255);z-index: 2;}#new {box-shadow: 0 3px 10px rgba(0,0,0,0.16);background-color: rgb(224, 224, 224);border-radius: 50%;cursor: pointer;font-size: 47px;font-weight: bold;height: 50px;position: absolute;right: 10px;text-align: center;top: 10px;transition: 200ms;width: 50px;z-index: 2;}#new:hover {box-shadow: 0 4px 30px rgba(0,0,0,0.16);background-color: rgb(238, 238, 238);transform: translate3d(0, -1px, 0);}#settings {box-shadow: 0 3px 10px rgba(0,0,0,0.16);background-color: rgb(224, 224, 224);background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAFsUlEQVRoge2Yf0yTRxjHn5bXtpQKLdbICpoOGAWCpEorogjo0C3AJmECi04FEpnT2WLcAttE3UjmwMVJkfgrOqpgpjEBRc1kIq3U6XBS1lgXnYmvs8YfC70OC9hWevtDKaWUUuRHk6Wf5JJ77+69fL+5u/d57gXw4sWLFy9evPx/oLzOSwghVtv168TVa9cAACAkOBhEcXEvhEKhcVzVjYJRGamRy7kajUYkFArLdDqd6M/btwEAgDttGgTzeJpWlaq4dOtWCAsNvcThcMwTonistCiVjKq9e48lLV6MWQEBmKDRBgqdjulMJo6KicGbpFJ88NChrZOtz8fdgfn5+cBgMARGo/FtrVYLZosFgEJ5WQAAW62g1+tBrVYDef/+grT09D51e7tqwpSPhXv37hGVMhm7Ri7/URwf3+fn748JOt22Kvb1N8PDTavXrt22RyZjeFq3S7RabfX7mZmtguhoTPP1HWKEoNPx/IUL8ZnGxjJPax0RhVIZcayuTvlBdvag89JfpzOZuHzXLuxpnW6BEAr5fvfueV+VlvZyuFyLvRGCTsdRMTG4o6OD5mmRc0cznqDRSmxbzG6bqVSqqxOlsR/qcB0kSa6sPX68vuH06WVuz0axC0sY255vqNWvr9BNhjXy5OnTdd+Vl8+qrKo6cPbcuXqEUIiriRBCMYXr1q121mcwGMaqc0SGNcLn8x8jhODXK1f46zdsyNxbXd0qLSrikyTJdjZee+sWFwCiAWDQagDGoNPpGPv27+fr9Xrm+Ft4icsUZXpQUC9CiAEAQKVSYWlqKmSkp58ym82bpBLJ4/5x8qNHqcbu7u3nz5/fdqGp6aURAJsZPz8/+DAnB8Risay7u/sLqUTSM1GGnLJy1ape+4M7hcHAEZGReElqav3NmzdLAADkcvmKxKSkqgWLFmFbgHRS6Ewmjp0zB2dmZR0mSbJgUo00nj3b6+fvPyRyT2WzcUJiYu+KnJyrbwkETwICA4c14PgF486YgbNzczsrZbI146nV5db6uqwsoq2t7cLF5mZ+X1/fQAe2i3EUJ1P0nxGHs2Jfn8blwqaNG4Hq4yP+sqTk97EacZk0KlpaOvPy8kwWiyXj4cOHgK3WATF2CaNNqLP2fhwM9fb0gEKpBKBQMtLS0qwVFRVdNTU1/4zV0LAghMIvNDUp5yUkOE8Q7Z+dtTvWHcbQmUwsiI7GH61Z89udO3cOv65Oty5WCCHup1JpkLWvT3m5tTXQYDCAyWQatAoEQQCTyYSQ4GBDd0+Pv06nozrdjo5b7lUfw9cXZs+ebZVKJCcB483vLFumH83lbFQ3RL1eP/cPjab0wMGDcKmlxT82NnaJ2WwGrVarCAsLM6wvLIQ5QuFOi8XyyWfFxTEkSYoePXo0eEs6nh8HU4EcDuTn54NYJPqGIIiyzOXLX4y7EXtIkgx8ZjQWdnZ2AgAcSUlOfmrf39DQEPm3Tneovr4+sVWlGroi/XUn+Pj4QML8+RApEOwpKS6+wufzT02YEXdACIV/u3NnyHOTqaW2rg6edXUNK34IGMMbPB6kJCc/FsXFfSyVSM5MpFa3IElSdKaxUZ2YlIRYAQHDxphB/wFetU1hMPBckchSXlGxwtM+bCgUioLPi4ufRURFOb1Rugqmx2pre13NTUyWCQCAlJSUIw8ePOiaymItutHeLrnY3Aym588HBjh+zfqhUIDNdpqr2phUIwAAM2fOPNXR0fGz2WLZx+Pxqk+cPLnEaDSC1dmX7RXhYWGg0WhyJ1vrqFAqlafjExK004OCnJ6TqWw23rxli1ahUIR6WuuIVMpkou07dqjF8fFDMubMrCz804kT6z2t0W1IkoyRFBVl5RUUYF8WCxM0Gs7OzcXKy5d/QQjNGun9CY0jo6WhoQEEAsG7/3Z1/YCtVvjr7t2l72Vk6DkczuRexLx48eLFixcvHuY/nQa0VsCJ2IsAAAAASUVORK5CYII=\");border-radius: 50%;cursor: pointer;font-size: 47px;font-weight: bold;height: 50px;position: absolute;right: 10px;text-align: center;top: 80px;transition: 200ms;width: 50px;z-index: 2;}#settings:hover {box-shadow: 0 4px 30px rgba(0,0,0,0.16);background-color: rgb(238, 238, 238);transform: translate3d(0, -1px, 0);}#widgets {position: relative;}.widget {background-color: rgb(255,255,255);box-shadow: 0 1px 4px rgba(0,0,0,0.16);min-height: 40px;overflow: hidden;position: absolute;min-width: 60px;}.widget.top {z-index: 1;}.widget .header {/*background-color: rgb(1, 87, 155);*//*color: rgb(255,255,255);*/cursor: move;font-weight: bold;height: 20px;margin-bottom: 5px;position: relative;}.widget .header > .title {height: 18px;overflow: hidden;padding: 2px 50px 0 10px;text-overflow: ellipsis;white-space: nowrap;}.widget .header > .actions {position: absolute;right: 0;top: 0;}.widget .header > .actions > li {cursor: pointer;display: inline-block;height: 20px;margin-left: 2px;width: 20px;}.widget .header > .actions > .close {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.widget .header > .actions > .config {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.widget .canvas {bottom: 0;left: 0;position: absolute;right: 0;top: 25px;}.widget .value {text-align: right;}.widget .value > .leading {opacity: 0;}.widget .resizer {background-color: rgb(140,140,140);bottom: 0;cursor: se-resize;height: 10px;position: absolute;right: 0;width: 26px;background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(255, 255, 255) 1px, rgb(255, 255, 255) 3px);transform: rotate(-45deg) translateX(4px) translateY(6px);}.shake {animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;transform: translate3d(0, 0, 0);backface-visibility: hidden;perspective: 1000px;}select.error { border-color: red; }@keyframes shake {10%, 90% {transform: translate3d(-1px, 0, 0);}20%, 80% {transform: translate3d(2px, 0, 0);}30%, 50%, 70% {transform: translate3d(-4px, 0, 0);}40%, 60% {transform: translate3d(4px, 0, 0);}}</style></head><body><div id=\"app\"><div id=\"new\" title=\"Add Widget\">+</div><div id=\"settings\" title=\"Settings\"></div><div id=\"widgets\"></div></div></body>';
 		
 		widgetDlg = new WidgetDlg();
 		widgetDlg.addListener('add', addWidget);
 		widgetDlg.addListener('change', changeWidget);
 		$('#new').addEventListener('click', widgetDlg.show);
+		
+		settingsDlg = new SettingsDlg();
+		settingsDlg.addListener('change', changeSettings);
+		$('#settings').addEventListener('click', settingsDlg.show);
 		
 		md.init();
 		
@@ -1054,9 +1174,39 @@ var md = {
 		
 		_data.addListener('update', updateData);
 		
-		var conf = JSON.parse(localStorage.getItem('ohmd-config'));
-		conf.widgets.forEach(addWidget);
+		Config.load();
+		Config.widgets.forEach(addWidget);
+		
+		if (Config.showGrid) {
+			showGrid();
+		}
 	};
+	
+	function showGrid() {
+		$('#app').addClass('grid');
+			$('#app').style.backgroundColor = Config.gridColor;
+			$('#app').style.backgroundImage = 'repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) ' + Config.gridSize + 'px),\
+						repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) ' + Config.gridSize + 'px)';
+	}
+	function hideGrid() {
+		$('#app').delClass('grid');
+		$('#app').style.backgroundColor = '';
+		$('#app').style.backgroundImage = '';
+	}
+	
+	function changeSettings(settings) {
+		console.info('changeSettings', settings);
+		Config.grid = settings.grid;
+		Config.gridSize = settings.gridSize;
+		Config.gridColor = settings.gridColor;
+		Config.showGrid = settings.showGrid;
+		Config.save();
+		if (Config.showGrid) {
+			showGrid();
+		} else {
+			hideGrid();
+		}
+	}
 	
 	function addWidget(config) {
 		var widget = new Widget(config);
@@ -1076,11 +1226,8 @@ var md = {
 	}
 	
 	function updateConfig() {
-		var conf = {
-			widgets: []
-		};
-		conf.widgets = _widgets.map(function(widget) { return widget.getConfig(); });
-		localStorage.setItem('ohmd-config', JSON.stringify(conf));
+		Config.widgets = _widgets.map(function(widget) { return widget.getConfig(); });
+		Config.save();
 	}
 	function showConfig(evt) {
 		widgetDlg.show(evt.evt, evt.widget);
