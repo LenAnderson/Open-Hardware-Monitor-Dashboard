@@ -244,11 +244,17 @@ var Widget = (function(arg_config) {
 	
 	function setData(newData) {
 		var sensor = newData;
-		id.forEach(function(part) {
-			if (sensor) {
-				sensor = sensor.Children.find(function(it) { return it.Text == part; });
-			}
-		});
+		if (id == 'Time') {
+			var now = new Date();
+			sensor = {Value: now.getHours()+','+now.getMinutes()};
+		}
+		else {
+			id.forEach(function(part) {
+				if (sensor) {
+					sensor = sensor.Children.find(function(it) { return it.Text == part; });
+				}
+			});
+		}
 		if (sensor) {
 			data.push(parseFloat(sensor.Value.replace(',', '.')));
 		}
@@ -290,8 +296,9 @@ var Widget = (function(arg_config) {
 	function updateValue() {
 		while (data.length > 1)
 			data.shift();
-		var parts = config.value.format.match(/(\d+)(?:\.(\d+))?/);
+		var parts = config.value.format.match(/(\d+)(?:([\.,:])(\d+))?/);
 		if (parts[2] == undefined) parts[2] = '';
+		if (parts[3] == undefined) parts[3] = '';
 		var value = '';
 		var leading = '';
 		if (parts[1].length > 0 && parseInt(data[0]).toString().length < parts[1].length) {
@@ -299,9 +306,12 @@ var Widget = (function(arg_config) {
 		}
 		value += parseInt(data[0]);
 		if (parts[2].length > 0) {
-			value += '.' + data[0].toFixed(parts[2].length).slice(-parts[2].length);
+			value += parts[2];
 		}
-		element.$('.value > .current').textContent = config.value.format.replace(/(\d+)(?:\.(\d+))?/, value).replace(/\$unit/, unit);
+		if (parts[3].length > 0) {
+			value += data[0].toFixed(parts[3].length).slice(-parts[3].length);
+		}
+		element.$('.value > .current').textContent = config.value.format.replace(/(\d+)(?:([\.,:])(\d+))?/, value).replace(/\$unit/, unit);
 		element.$('.value > .leading').textContent = leading;
 	}
 	function updateChart() {

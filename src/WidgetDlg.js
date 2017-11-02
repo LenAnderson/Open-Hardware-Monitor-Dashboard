@@ -224,8 +224,14 @@ var WidgetDlg = (function() {
 	}
 	
 	function updateSensors(data) {
+		var timeOpt = document.createElement('option'); {
+			timeOpt.textContent = 'Time';
+			timeOpt.dataId = ['Time'];
+			timeOpt.value = 'Time';
+		}
+		
 		var offset = [];
-		var struct = getChildStructure(data);
+		var struct = [timeOpt].concat(getChildStructure(data));
 		setSensors(struct);
 		function getChildStructure(sensor) {
 			var opt = document.createElement('option');
