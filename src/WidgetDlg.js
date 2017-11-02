@@ -21,6 +21,8 @@ var WidgetDlg = (function() {
 	var _value = {
 		fontSize: undefined,
 		color: undefined,
+		colorPicker: undefined,
+		colorOpacity: undefined,
 		format: undefined
 	}
 	
@@ -37,13 +39,13 @@ var WidgetDlg = (function() {
 		title: 'New Widget',
 		type: 'graph',
 		graph: {
-			lineColor: 'rgba(128,128,128,0.5)',
-			fillColor: 'rgba(192,192,192,0.5)',
-			history: 15,
+			lineColor: 'rgba(115, 115, 90, 0.25)',
+			fillColor: 'rgba(115, 115, 90, 0.25)',
+			history: 60,
 			max: 0
 		},
 		value: {
-			color: '#000000',
+			color: 'rgba(115,115,90,0.5)',
 			fontSize: 32,
 			format: '0.0 $unit'
 		}
@@ -79,6 +81,7 @@ var WidgetDlg = (function() {
 		_value.fontSize = dlg.$('#dlg-widget-value-fontSize');
 		_value.color = dlg.$('#dlg-widget-value-color');
 		_value.colorPicker = dlg.$('#dlg-widget-value-color-picker');
+		_value.colorOpacity = dlg.$('#dlg-widget-value-color-opacity');
 		_value.format = dlg.$('#dlg-widget-value-format');
 		
 		dlg.$('#dlg-widget-cancel').addEventListener('click', function() {
@@ -146,9 +149,11 @@ var WidgetDlg = (function() {
 			_graph.history.value = config.graph.history;
 			_graph.max.value = config.graph.max;
 		} if (config.type == 'value' || !theWidget) {
+			var colorParts = config.value.color.match(/[0-9\.]+/g);
 			_value.fontSize.value = config.value.fontSize;
-			_value.color.value = config.value.color;
-			_value.colorPicker.value = config.value.color;
+			_value.color.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
+			_value.colorPicker.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
+			_value.colorOpacity.value = parseFloat(colorParts[3])*100;
 			_value.format.value = config.value.format;
 		}
 		if (theWidget) {
@@ -176,7 +181,7 @@ var WidgetDlg = (function() {
 				widget.setMax(parseFloat(_graph.max.value));
 			} else if (widget.getConfig().type == 'value') {
 				widget.setFontSize(parseInt(_value.fontSize.value));
-				widget.setColor(_value.color.value);
+				widget.setColor(_value.color.value, _value.colorOpacity.value);
 				widget.setFormat(_value.format.value);
 			}
 		} else {
@@ -202,6 +207,7 @@ var WidgetDlg = (function() {
 				value: {
 					fontSize: parseInt(_value.fontSize.value),
 					color: _value.color.value,
+					colorOpacity: _value.colorOpacity.value,
 					format: _value.format.value
 				},
 				size: {
@@ -218,8 +224,14 @@ var WidgetDlg = (function() {
 	}
 	
 	function updateSensors(data) {
+		var timeOpt = document.createElement('option'); {
+			timeOpt.textContent = 'Time';
+			timeOpt.dataId = ['Time'];
+			timeOpt.value = 'Time';
+		}
+		
 		var offset = [];
-		var struct = getChildStructure(data);
+		var struct = [timeOpt].concat(getChildStructure(data));
 		setSensors(struct);
 		function getChildStructure(sensor) {
 			var opt = document.createElement('option');

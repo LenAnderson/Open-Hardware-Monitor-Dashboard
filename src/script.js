@@ -2,7 +2,7 @@
 // @name         Open Hardware Monitor - Dashboard
 // @banesoace    https://github.com/LenAnderson/
 // @downloadURL  https://github.com/LenAnderson/Open-Hardware-Monitor-Dashboard/raw/master/ohmd.user.js
-// @version      0.2
+// @version      0.3
 // @author       LenAnderson
 // @match        *://*/*
 // @grant        GM_registerMenuCommand
