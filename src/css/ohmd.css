@@ -5,7 +5,7 @@ html, body {
 	padding: 0;
 }
 body {
-	background-color: rgb(245, 245, 245);
+	background-color: rgb(29, 29, 29);
 	font-family: Helvetica, sans-serif;
 }
 ul {
@@ -29,62 +29,35 @@ ${include: md.css}
 	bottom: 0;
 	right: 0;
 	left: 0;
-	transition: 400ms ease-in-out;
-}
-#app.grid {
-	background-color: rgb(0,0,0);
-	background-image: repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) 10px),
-						repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) 10px);
+	/*transition: 400ms ease-in-out;*/
 }
 
-#appbar {
-	background-color: rgb(1, 87, 155);
-	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
-	color: rgb(255,255,255);
+.appBtn {
+	box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+	background-color: rgba(224, 224, 224, 0.25);
+	border-radius: 50%;
+	cursor: pointer;
+	font-size: 47px;
+	font-weight: bold;
+	height: 50px;
+	position: absolute;
+	right: 10px;
+	text-align: center;
+	transition: 200ms;
+	width: 50px;
 	z-index: 2;
+}
+.appBtn:hover {
+	box-shadow: 0 4px 30px rgba(0,0,0,0.16);
+	background-color: rgba(238, 238, 238, 0.5);
+	transform: translate3d(0, -1px, 0);
 }
 #new {
-	box-shadow: 0 3px 10px rgba(0,0,0,0.16);
-	background-color: rgb(224, 224, 224);
-	border-radius: 50%;
-	cursor: pointer;
-	font-size: 47px;
-	font-weight: bold;
-	height: 50px;
-	position: absolute;
-	right: 10px;
-	text-align: center;
 	top: 10px;
-	transition: 200ms;
-	width: 50px;
-	z-index: 2;
-}
-#new:hover {
-	box-shadow: 0 4px 30px rgba(0,0,0,0.16);
-	background-color: rgb(238, 238, 238);
-	transform: translate3d(0, -1px, 0);
 }
 #settings {
-	box-shadow: 0 3px 10px rgba(0,0,0,0.16);
-	background-color: rgb(224, 224, 224);
 	background-image: url("data:image/png;base64,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");
-	border-radius: 50%;
-	cursor: pointer;
-	font-size: 47px;
-	font-weight: bold;
-	height: 50px;
-	position: absolute;
-	right: 10px;
-	text-align: center;
 	top: 80px;
-	transition: 200ms;
-	width: 50px;
-	z-index: 2;
-}
-#settings:hover {
-	box-shadow: 0 4px 30px rgba(0,0,0,0.16);
-	background-color: rgb(238, 238, 238);
-	transform: translate3d(0, -1px, 0);
 }
 
 
@@ -93,19 +66,22 @@ ${include: md.css}
 }
 
 .widget {
-	background-color: rgb(255,255,255);
-	box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+	background-color: rgba(255,255,255, 0);
+	/*box-shadow: 0 1px 4px rgba(0,0,0,0.16);*/
 	min-height: 40px;
 	overflow: hidden;
 	position: absolute;
+	transition: background-color ease-in-out 200ms;
 	min-width: 60px;
+}
+.widget:hover, .widget.hovered {
+	background-color: rgba(255,255,255, 0.5);
 }
 .widget.top {
 	z-index: 1;
 }
 .widget .header {
-	/*background-color: rgb(1, 87, 155);*/
-	/*color: rgb(255,255,255);*/
+	color: rgb(115, 115, 90);
 	cursor: move;
 	font-weight: bold;
 	height: 20px;
@@ -154,15 +130,19 @@ ${include: md.css}
 }
 
 .widget .resizer {
-	background-color: rgb(140,140,140);
+	background-color: rgba(140,140,140, 0.5);
 	bottom: 0;
 	cursor: se-resize;
 	height: 10px;
+	opacity: 0;
 	position: absolute;
 	right: 0;
 	width: 26px;
-	background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(255, 255, 255) 1px, rgb(255, 255, 255) 3px);
+	background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);
 	transform: rotate(-45deg) translateX(4px) translateY(6px);
+}
+.widget:hover .resizer {
+	opacity: 1;
 }
 
 .shake {
