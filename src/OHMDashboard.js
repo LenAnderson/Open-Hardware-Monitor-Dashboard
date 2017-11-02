@@ -42,10 +42,10 @@ var OHMDashboard = (function() {
 	};
 	
 	function showGrid() {
-		$('#app').addClass('grid');
-			$('#app').style.backgroundColor = Config.gridColor;
-			$('#app').style.backgroundImage = 'repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) ' + Config.gridSize + 'px),\
-						repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, rgb(245, 245, 245) 1px, rgb(245, 245, 245) ' + Config.gridSize + 'px)';
+		var bg = getComputedStyle(document.body).backgroundColor;
+		$('#app').style.backgroundColor = Config.gridColor;
+		$('#app').style.backgroundImage = 'repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ' + bg + ' 1px, ' + bg + ' ' + Config.gridSize + 'px),\
+					repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ' + bg + ' 1px, ' + bg + ' ' + Config.gridSize + 'px)';
 	}
 	function hideGrid() {
 		$('#app').delClass('grid');

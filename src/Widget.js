@@ -72,16 +72,24 @@ var Widget = (function(arg_config) {
 					yAxes: [{
 						ticks: {
 							suggestedMin: 0
+						},
+						gridLines: {
+							color: 'rgba(50,50,50,0.5)'
+						}
+					}],
+					xAxes: [{
+						gridLines: {
+							color: 'rgba(50,50,50,0.5)'
 						}
 					}]
-				}
+				},
 			}
 		});
 		data = chart.data.datasets[0].data;
 		element.chart = chart;
 		setHistory(config.graph.history);
 		setFillColor(config.graph.fillColor, config.graph.fillColorOpacity);
-		setLineColor(config.graph.lineColor, config.graph.fillColorOpacity);
+		setLineColor(config.graph.lineColor, config.graph.lineColorOpacity);
 		setMax(config.graph.max);
 		
 		element.$('.resizer').addEventListener('mousedown', resizeStart);
@@ -89,7 +97,7 @@ var Widget = (function(arg_config) {
 	function WidgetValue() {
 		element.$('.content').innerHTML = '${include-min-esc: html/widget-value.html}';
 		data = [];
-		setColor(config.value.color);
+		setColor(config.value.color, config.value.colorOpacity);
 		setFontSize(config.value.fontSize);
 		setFormat(config.value.format);
 		
@@ -108,6 +116,7 @@ var Widget = (function(arg_config) {
 		if (!dragging) {
 			evt.preventDefault();
 			dragging = true;
+			element.classList.add('hovered');
 			var style = getComputedStyle(element);
 			dragOffset = {
 				left: parseInt(style.getPropertyValue("left"),10) - evt.clientX,
@@ -120,6 +129,7 @@ var Widget = (function(arg_config) {
 		if (!resizing) {
 			evt.preventDefault();
 			resizing = true;
+			element.classList.add('hovered');
 			var rect = element.getBoundingClientRect();
 			resizeOrigin = {
 				left: rect.right,
@@ -148,10 +158,12 @@ var Widget = (function(arg_config) {
 		if (dragging) {
 			evt.preventDefault();
 			dragging = false;
+			element.classList.remove('hovered');
 			dragOffset = undefined;
 		} else if (resizing) {
 			evt.preventDefault();
 			resizing = false;
+			element.classList.remove('hovered');
 			resizeOrigin = undefined;
 		}
 	}
@@ -205,7 +217,11 @@ var Widget = (function(arg_config) {
 		updateChart();
 	}
 	
-	function setColor(color) {
+	function setColor(color, opacity) {
+		if (color[0] == '#') {
+			var parts = color.substring(1).match(/.{2}/g);
+			color = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
+		}
 		config.value.color = color;
 		raiseConfigEvent();
 		element.$('.value').style.color = color;
