@@ -28,7 +28,7 @@ var Widget = (function(arg_config) {
 		element = document.createElement('div');
 		element.innerHTML = '${include-min-esc: html/widget.html}';
 		element.addClass('widget');
-		setTitle(config.title || config.id.join(' - '));
+		setTitle(config.title);
 		setPosition(config.position);
 		
 		$('#widgets').appendChild(element);
@@ -246,7 +246,7 @@ var Widget = (function(arg_config) {
 		var sensor = newData;
 		if (id == 'Time') {
 			var now = new Date();
-			sensor = {Value: now.getHours()+','+now.getMinutes()};
+			sensor = {Value: now.getHours()+','+now.getMinutes().toString().padStart(2,'0')};
 		}
 		else {
 			id.forEach(function(part) {
