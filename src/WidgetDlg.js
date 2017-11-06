@@ -103,6 +103,10 @@ var WidgetDlg = (function() {
 		});
 		_sensor.addEventListener('change', function() {
 			dlg.$('#dlg-widget-title').value = _sensor.$(':checked').dataId.join(' - ');
+			if (_sensor.value == 'Time') {
+				_type.value.click();
+				_value.format.value = '0:00';
+			}
 			dlg.$('#dlg-widget-title').focus();
 			dlg.$('#dlg-widget-title').blur();
 		});
