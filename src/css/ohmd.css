@@ -96,9 +96,14 @@ ${include: md.css}
 	white-space: nowrap;
 }
 .widget .header > .actions {
+	opacity: 0;
 	position: absolute;
 	right: 0;
 	top: 0;
+	transition: opacity ease-in-out 200ms;
+}
+.widget:hover .header > .actions {
+	opacity: 1;
 }
 .widget .header > .actions > li {
 	cursor: pointer;
