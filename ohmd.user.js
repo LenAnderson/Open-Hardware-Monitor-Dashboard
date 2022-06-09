@@ -704,6 +704,13 @@ var md = {
 		raiseConfigEvent();
 		element.$('.title').textContent = title;
 	}
+
+	function setSensor(newId, sensor) {
+		config.id = newId;
+		id = newId;
+		config.sensor = sensor;
+		raiseConfigEvent();
+	}
 	
 	function setData(newData) {
 		var sensor = newData;
@@ -720,19 +727,19 @@ var md = {
 		}
 		if (sensor) {
 			data.push(parseFloat(sensor.Value.replace(',', '.')));
-		}
-		setUnit(sensor.Value.replace(/^\d+([,\.]\d+)?\s*(.*)$/, '$2'));
-		if (config.type == 'graph') {
-			if (config.graph.max == 0) {
-				if (sensor.Value.search(/%$/) != -1) {
-					setAutoMax(100);
-				} else {
-					setAutoMax(undefined);
+			setUnit(sensor.Value.replace(/^\d+([,\.]\d+)?\s*(.*)$/, '$2'));
+			if (config.type == 'graph') {
+				if (config.graph.max == 0) {
+					if (sensor.Value.search(/%$/) != -1) {
+						setAutoMax(100);
+					} else {
+						setAutoMax(undefined);
+					}
 				}
+				updateChart();
+			} else if (config.type == 'value') {
+				updateValue();
 			}
-			updateChart();
-		} else if (config.type == 'value') {
-			updateValue();
 		}
 	}
 	
@@ -812,6 +819,7 @@ var md = {
 	var module;
 	return module={
 		setData: setData,
+		setSensor: setSensor,
 		setTitle: setTitle,
 		setHistory: setHistory,
 		setMax: setMax,
@@ -876,6 +884,7 @@ var md = {
 		}
 	};
 	var widget;
+	var isOld = false;
 	
 	
 	//
@@ -927,7 +936,9 @@ var md = {
 			_graph.lineColor.value = this.value;
 		});
 		_sensor.addEventListener('change', function() {
-			dlg.$('#dlg-widget-title').value = _sensor.$(':checked').dataId.join(' - ');
+			if (!isOld) {
+				dlg.$('#dlg-widget-title').value = _sensor.$(':checked').dataId.join(' - ');
+			}
 			if (_sensor.value == 'Time') {
 				_type.value.click();
 				_value.format.value = '0:00';
@@ -986,9 +997,10 @@ var md = {
 			_value.format.value = config.value.format;
 		}
 		if (theWidget) {
-			_sensor.disabled = true;
+			// _sensor.disabled = true;
 			_type.graph.disabled = true;
 			_type.value.disabled = true;
+			isOld = true;
 		} else {
 			_sensor.disabled = false;
 			_type.graph.disabled = false;
@@ -1002,6 +1014,13 @@ var md = {
 	
 	function ok() {
 		if (widget) {
+			if (_sensor.value == '') {
+				_sensor.addClass('error');
+				dlg.$('.content').addClass('shake');
+				setTimeout(function() { dlg.$('.content').delClass('shake'); }, 900);
+				return;
+			}
+			widget.setSensor(_sensor.$(':checked').dataId, _sensor.value);
 			widget.setTitle(_title.value.trim());
 			if (widget.getConfig().type == 'graph') {
 				widget.setHistory(parseInt(_graph.history.value));

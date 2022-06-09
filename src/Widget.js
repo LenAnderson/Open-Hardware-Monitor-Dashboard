@@ -241,6 +241,13 @@ var Widget = (function(arg_config) {
 		raiseConfigEvent();
 		element.$('.title').textContent = title;
 	}
+
+	function setSensor(newId, sensor) {
+		config.id = newId;
+		id = newId;
+		config.sensor = sensor;
+		raiseConfigEvent();
+	}
 	
 	function setData(newData) {
 		var sensor = newData;
@@ -257,19 +264,19 @@ var Widget = (function(arg_config) {
 		}
 		if (sensor) {
 			data.push(parseFloat(sensor.Value.replace(',', '.')));
-		}
-		setUnit(sensor.Value.replace(/^\d+([,\.]\d+)?\s*(.*)$/, '$2'));
-		if (config.type == 'graph') {
-			if (config.graph.max == 0) {
-				if (sensor.Value.search(/%$/) != -1) {
-					setAutoMax(100);
-				} else {
-					setAutoMax(undefined);
+			setUnit(sensor.Value.replace(/^\d+([,\.]\d+)?\s*(.*)$/, '$2'));
+			if (config.type == 'graph') {
+				if (config.graph.max == 0) {
+					if (sensor.Value.search(/%$/) != -1) {
+						setAutoMax(100);
+					} else {
+						setAutoMax(undefined);
+					}
 				}
+				updateChart();
+			} else if (config.type == 'value') {
+				updateValue();
 			}
-			updateChart();
-		} else if (config.type == 'value') {
-			updateValue();
 		}
 	}
 	
@@ -349,6 +356,7 @@ var Widget = (function(arg_config) {
 	var module;
 	return module={
 		setData: setData,
+		setSensor: setSensor,
 		setTitle: setTitle,
 		setHistory: setHistory,
 		setMax: setMax,
