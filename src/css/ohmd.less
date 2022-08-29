@@ -1,0 +1,157 @@
+html, body {
+	margin: 0;
+	padding: 0;
+}
+body {
+	background-color: rgb(29 29 29);
+	display: flex;
+	flex-direction: row;
+}
+
+
+
+
+.ohmd--ohmContainer {
+	background-color: rgb(150 150 150);
+	box-sizing: border-box;
+	height: 100vh;
+	left: 0vw;
+	overflow: auto;
+	position: absolute;
+	top: 0;
+	transition: 200ms;
+	z-index: 2;
+
+	> .ohmd--ohmContainer-content {
+		box-sizing: border-box;
+		direction: rtl;
+		height: 100vh;
+		overflow: auto;
+		padding: 0 10px;
+
+		> .header, > .main {
+			direction: ltr;
+		}
+	}
+
+	> .ohmd--ohmContainer-toggle {
+		box-sizing: border-box;
+		background-color: transparent;
+		color: rgb(255 255 255);
+		cursor: pointer;
+		display: block;
+		height: 100vh;
+		line-height: 20px;
+		padding-top: calc(50vh - 30px);
+		position: absolute;
+		right: 0;
+		text-align: center;
+		top: 0;
+		width: 15px;
+
+		&:after {
+			content: "◀ ◀ ◀";
+		}
+
+		&:hover {
+			background-color: rgba(60 60 60 / 50%);
+		}
+	}
+
+	&.ohmd--collapsed {
+		background-color: transparent;
+		> .ohmd--ohmContainer-toggle:after {
+			content: "▶ ▶ ▶";
+		}
+	}
+}
+
+.ohmd--container {
+	flex: 1 1 100vw;
+	height: 100vh;
+	position: relative;
+	transform-origin: right;
+	transition: transform 200ms;
+
+
+	> .ohmd--widget {
+		background-color: rgba(255 255 255 / 0%);
+		min-height: 40px;
+		overflow: hidden;
+		position: absolute;
+		transition: background-color ease-in-out 200ms;
+		min-width: 60px;
+
+		&:hover, &.ohmd--hovered {
+			background-color: rgba(255 255 255 / 25%);
+			> .ohmd--widget-header > .ohmd--widget-actions {
+				opacity: 1;
+			}
+			> .ohmd--widget-body > .ohmd--widget-resizer {
+				opacity: 1;
+			}
+		}
+
+		> .ohmd--widget-header {
+			color: rgb(115, 115, 90);
+			cursor: move;
+			font-weight: bold;
+			height: 20px;
+			margin-bottom: 5px;
+			position: relative;
+
+			> .ohmd--widget-title {
+				font-size: 16px;
+				height: 18px;
+				overflow: hidden;
+				padding: 2px 50px 0 10px;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			> .ohmd--widget-actions {
+				opacity: 0;
+				position: absolute;
+				right: 0;
+				top: 0;
+				transition: opacity ease-in-out 200ms;
+
+				> .ohmd--widget-action {
+					display: inline-block;
+					height: 20px;
+					margin-left: 2px;
+					width: 20px;
+
+					&.ohmd--widget-remove {
+						background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==");
+					}
+					&.ohmd--widget-config {
+						background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==");
+					}
+				}
+			}
+		}
+
+		> .ohmd--widget-body {
+			> .ohmd--widget-chartContainer {
+				bottom: 0;
+				left: 0;
+				position: absolute;
+				right: 0;
+				top: 25px;
+			}
+			> .ohmd--widget-resizer {
+				background-color: rgba(140,140,140, 0.5);
+				bottom: 0;
+				cursor: se-resize;
+				height: 10px;
+				opacity: 0;
+				position: absolute;
+				right: 0;
+				width: 26px;
+				background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);
+				transform: rotate(-45deg) translateX(4px) translateY(6px);
+			}
+		}
+	}
+}
