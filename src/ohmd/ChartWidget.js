@@ -1,4 +1,6 @@
 import { log } from "../lib/basics.js";
+import { ChartWidgetDialog } from "./ChartWidgetDialog.js";
+import { ChartWidgetPreferences } from "./ChartWidgetPreferences.js";
 import { Widget } from "./Widget.js";
 
 export class ChartWidget extends Widget {
@@ -28,14 +30,23 @@ export class ChartWidget extends Widget {
 	}
 
 	/**@type{Number}*/ history = 120;
-	/**@type{Number}*/ max = null;
+	
+	
+	/**@type{Number}*/ #max = null;
+	get max() { return this.#max; }
+	set max(value) {
+		if (this.#max != value) {
+			this.#max = value;
+			if (this.chart) this.chart.options.scales.yAxis.suggestedMax = value;
+		}
+	}
 
 	/**@type{String}*/ #lineColor;
 	get lineColor() { return this.#lineColor; }
 	set lineColor(value) {
 		if (this.#lineColor != value) {
 			this.#lineColor = value;
-			if (this.chart) this.chart.data.datasets[0].borderColor = value;
+			if (this.chart) this.chart.data.datasets[0].borderColor = `rgba(${value.join(', ')})`;
 		}
 	}
 	
@@ -44,7 +55,7 @@ export class ChartWidget extends Widget {
 	set fillColor(value) {
 		if (this.#fillColor != value) {
 			this.#fillColor = value;
-			if (this.chart) this.chart.data.datasets[0].backgroundColor = value;
+			if (this.chart) this.chart.data.datasets[0].backgroundColor = `rgba(${value.join(', ')})`;;
 		}
 	}
 
@@ -73,6 +84,8 @@ export class ChartWidget extends Widget {
 			/**@type{Number}*/height=300,
 			/**@type{String}*/lineColor=null,
 			/**@type{String}*/fillColor=null,
+			/**@type{Number}*/history=120,
+			/**@type{Number}*/max=0,
 		}
 		) {
 		super(prefs, pixel, {sensor, name});
@@ -83,26 +96,28 @@ export class ChartWidget extends Widget {
 		this.height = height;
 		if (lineColor === null) {
 			if (this.sensor.toLowerCase().search('nvidia') != -1) {
-				this.lineColor = 'rgba(118,185,0,0.25)';
+				this.lineColor = [118, 185, 0, 0.25];
 			} else if (this.sensor.toLowerCase().search('intel') != -1) {
-				this.lineColor = 'rgba(0,113,197,0.25)';
+				this.lineColor = [0, 113, 197, 0.25];
 			} else {
-				this.lineColor = 'rgba(115,115,90,0.25)';
+				this.lineColor = [115, 115, 90, 0.25];
 			}
 		} else {
 			this.lineColor = lineColor;
 		}
 		if (fillColor === null) {
 			if (this.sensor.toLowerCase().search('nvidia') != -1) {
-				this.fillColor = 'rgba(118,185,0,0.25)';
+				this.fillColor = [118, 185, 0, 0.125];
 			} else if (this.sensor.toLowerCase().search('intel') != -1) {
-				this.fillColor = 'rgba(0,113,197,0.25)';
+				this.fillColor = [0, 113, 197, 0.125];
 			} else {
-				this.fillColor = 'rgba(115,115,90,0.25)';
+				this.fillColor = [115, 115, 90, 0.125];
 			}
 		} else {
 			this.fillColor = fillColor;
 		}
+		this.history = history;
+		this.max = max;
 	}
 
 
@@ -204,6 +219,21 @@ export class ChartWidget extends Widget {
 	}
 
 
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		const prefs = new ChartWidgetPreferences(this.getConfig());
+		const dlg = new ChartWidgetDialog(prefs)
+		await dlg.show(trigger);
+		if (await dlg.outcome) {
+			this.name = dlg.prefs.name;
+			this.lineColor = dlg.prefs.lineColor;
+			this.fillColor = dlg.prefs.fillColor;
+			this.history = dlg.prefs.history;
+			this.max = dlg.prefs.max;
+			this.fireUpdate();
+		}
+	}
 
 
 	getConfig() {

@@ -238,7 +238,15 @@ export class Dashboard {
 
 	loadWidgets() {
 		const configs = JSON.parse(localStorage.getItem('ohmd--widgets') || '[]');
-		configs.forEach(config=>this.addWidgetFromConfig(config));
+		configs.forEach(config=>{
+			if (config.lineColor && (typeof config.lineColor) == 'string') {
+				config.lineColor = config.lineColor.substring(5, config.lineColor.length-2).split(',');
+			}
+			if (config.fillColor && (typeof config.fillColor) == 'string') {
+				config.fillColor = config.fillColor.substring(5, config.fillColor.length-2).split(',');
+			}
+			this.addWidgetFromConfig(config);
+		});
 	}
 
 

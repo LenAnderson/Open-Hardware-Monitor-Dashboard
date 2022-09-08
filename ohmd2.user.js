@@ -259,6 +259,7 @@ class Widget {
 						config.classList.add('ohmd--widget-config');
 						config.title = 'Configure Widget';
 						config.href = 'javascript:;';
+						config.addEventListener('click', ()=>this.showSettings(config));
 						actions.append(config);
 					}
 					const remove = document.createElement('a'); {
@@ -324,6 +325,11 @@ class Widget {
 		}
 	}
 
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		throw 'Widget.showSettings() is not implemented!';
+	}
+
 	remove() {
 		this.dom.remove();
 		if (this.onRemove) {
@@ -362,6 +368,8 @@ class Widget {
 
 
 
+
+
 class ChartWidget extends Widget {
 	chart;
 
@@ -389,14 +397,23 @@ class ChartWidget extends Widget {
 	}
 
 	/**@type{Number}*/ history = 120;
-	/**@type{Number}*/ max = null;
+	
+	
+	/**@type{Number}*/ #max = null;
+	get max() { return this.#max; }
+	set max(value) {
+		if (this.#max != value) {
+			this.#max = value;
+			if (this.chart) this.chart.options.scales.yAxis.suggestedMax = value;
+		}
+	}
 
 	/**@type{String}*/ #lineColor;
 	get lineColor() { return this.#lineColor; }
 	set lineColor(value) {
 		if (this.#lineColor != value) {
 			this.#lineColor = value;
-			if (this.chart) this.chart.data.datasets[0].borderColor = value;
+			if (this.chart) this.chart.data.datasets[0].borderColor = `rgba(${value.join(', ')})`;
 		}
 	}
 	
@@ -405,7 +422,7 @@ class ChartWidget extends Widget {
 	set fillColor(value) {
 		if (this.#fillColor != value) {
 			this.#fillColor = value;
-			if (this.chart) this.chart.data.datasets[0].backgroundColor = value;
+			if (this.chart) this.chart.data.datasets[0].backgroundColor = `rgba(${value.join(', ')})`;;
 		}
 	}
 
@@ -434,6 +451,8 @@ class ChartWidget extends Widget {
 			/**@type{Number}*/height=300,
 			/**@type{String}*/lineColor=null,
 			/**@type{String}*/fillColor=null,
+			/**@type{Number}*/history=120,
+			/**@type{Number}*/max=0,
 		}
 		) {
 		super(prefs, pixel, {sensor, name});
@@ -444,26 +463,28 @@ class ChartWidget extends Widget {
 		this.height = height;
 		if (lineColor === null) {
 			if (this.sensor.toLowerCase().search('nvidia') != -1) {
-				this.lineColor = 'rgba(118,185,0,0.25)';
+				this.lineColor = [118, 185, 0, 0.25];
 			} else if (this.sensor.toLowerCase().search('intel') != -1) {
-				this.lineColor = 'rgba(0,113,197,0.25)';
+				this.lineColor = [0, 113, 197, 0.25];
 			} else {
-				this.lineColor = 'rgba(115,115,90,0.25)';
+				this.lineColor = [115, 115, 90, 0.25];
 			}
 		} else {
 			this.lineColor = lineColor;
 		}
 		if (fillColor === null) {
 			if (this.sensor.toLowerCase().search('nvidia') != -1) {
-				this.fillColor = 'rgba(118,185,0,0.25)';
+				this.fillColor = [118, 185, 0, 0.125];
 			} else if (this.sensor.toLowerCase().search('intel') != -1) {
-				this.fillColor = 'rgba(0,113,197,0.25)';
+				this.fillColor = [0, 113, 197, 0.125];
 			} else {
-				this.fillColor = 'rgba(115,115,90,0.25)';
+				this.fillColor = [115, 115, 90, 0.125];
 			}
 		} else {
 			this.fillColor = fillColor;
 		}
+		this.history = history;
+		this.max = max;
 	}
 
 
@@ -565,6 +586,21 @@ class ChartWidget extends Widget {
 	}
 
 
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		const prefs = new ChartWidgetPreferences(this.getConfig());
+		const dlg = new ChartWidgetDialog(prefs)
+		await dlg.show(trigger);
+		if (await dlg.outcome) {
+			this.name = dlg.prefs.name;
+			this.lineColor = dlg.prefs.lineColor;
+			this.fillColor = dlg.prefs.fillColor;
+			this.history = dlg.prefs.history;
+			this.max = dlg.prefs.max;
+			this.fireUpdate();
+		}
+	}
 
 
 	getConfig() {
@@ -864,7 +900,15 @@ class Dashboard {
 
 	loadWidgets() {
 		const configs = JSON.parse(localStorage.getItem('ohmd--widgets') || '[]');
-		configs.forEach(config=>this.addWidgetFromConfig(config));
+		configs.forEach(config=>{
+			if (config.lineColor && (typeof config.lineColor) == 'string') {
+				config.lineColor = config.lineColor.substring(5, config.lineColor.length-2).split(',');
+			}
+			if (config.fillColor && (typeof config.fillColor) == 'string') {
+				config.fillColor = config.fillColor.substring(5, config.fillColor.length-2).split(',');
+			}
+			this.addWidgetFromConfig(config);
+		});
 	}
 
 
@@ -1130,6 +1174,188 @@ class Preferences {
 		this.snapToGrid = prefs.snapToGrid ?? true;
 		this.showGrid = prefs.showGrid ?? false;
 		this.gridSize = prefs.gridSize ?? 1;
+	}
+}
+
+
+// src\ohmd\ChartWidgetPreferences.js
+class ChartWidgetPreferences {
+	/**@type{String}*/ name;
+	/**@type{Number[]}*/ lineColor;
+	/**@type{Number[]}*/ fillColor;
+	/**@type{Number}*/ history;
+	/**@type{Number}*/ max;
+
+
+
+
+	constructor({name, lineColor, fillColor, history, max}) {
+		this.apply({name, lineColor, fillColor, history, max});
+	}
+
+	apply({name, lineColor, fillColor, history, max}) {
+		this.name = name;
+		this.lineColor = lineColor;
+		this.fillColor = fillColor;
+		this.history = history;
+		this.max = max;
+	}
+}
+
+
+// src\ohmd\ChartWidgetDialog.js
+
+
+
+
+class ChartWidgetDialog extends Dialog {
+	/**@type{ChartWidgetPreferences}*/ prefs;
+
+
+
+
+	constructor(/**@type{ChartWidgetPreferences}*/prefs) {
+		super('Widget Settings', 'OK', 'Cancel');
+		this.prefs = new ChartWidgetPreferences(prefs);
+
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const nameRow = document.createElement('div'); {
+			nameRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Name'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Name';
+					Binding.create(this.prefs, 'name', inp, 'value');
+					lbl.append(inp);
+				}
+				nameRow.append(lbl);
+			}
+			this.body.append(nameRow);
+		}
+		
+		const lineColorRow = document.createElement('div'); {
+			lineColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Line Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Line Color';
+					Binding.create(this.prefs, 'lineColor', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this.prefs, 'lineColor', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Line Color';
+					Binding.create(this.prefs, 'lineColor', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				lineColorRow.append(lbl);
+			}
+			this.body.append(lineColorRow);
+		}
+		
+		const fillColorRow = document.createElement('div'); {
+			fillColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Fill Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Fill Color';
+					Binding.create(this.prefs, 'fillColor', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this.prefs, 'fillColor', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Fill Color';
+					Binding.create(this.prefs, 'fillColor', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				fillColorRow.append(lbl);
+			}
+			this.body.append(fillColorRow);
+		}
+
+		const historyRow = document.createElement('div'); {
+			historyRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('History [s]'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'History';
+					Binding.create(this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				historyRow.append(lbl);
+			}
+			this.body.append(historyRow);
+		}
+
+		const maxRow = document.createElement('div'); {
+			maxRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Max. Value (0=auto)'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'Max Value';
+					Binding.create(this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				maxRow.append(lbl);
+			}
+			this.body.append(maxRow);
+		}
 	}
 }
 // ---------------- /IMPORTS ----------------

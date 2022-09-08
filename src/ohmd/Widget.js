@@ -78,6 +78,7 @@ export class Widget {
 						config.classList.add('ohmd--widget-config');
 						config.title = 'Configure Widget';
 						config.href = 'javascript:;';
+						config.addEventListener('click', ()=>this.showSettings(config));
 						actions.append(config);
 					}
 					const remove = document.createElement('a'); {
@@ -141,6 +142,11 @@ export class Widget {
 		if (this.onUpdate) {
 			this.onUpdate();
 		}
+	}
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		throw 'Widget.showSettings() is not implemented!';
 	}
 
 	remove() {
