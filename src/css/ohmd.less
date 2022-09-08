@@ -11,6 +11,16 @@ body {
 
 
 
+.header {
+	align-items: center;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+
+
+
 .ohmd--ohmContainer {
 	background-color: rgb(150 150 150);
 	box-sizing: border-box;
@@ -37,7 +47,7 @@ body {
 	> .ohmd--ohmContainer-toggle {
 		box-sizing: border-box;
 		background-color: transparent;
-		color: rgb(255 255 255);
+		color: rgb(100 100 100);
 		cursor: pointer;
 		display: block;
 		height: 100vh;
@@ -152,6 +162,76 @@ body {
 				background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);
 				transform: rotate(-45deg) translateX(4px) translateY(6px);
 			}
+		}
+	}
+}
+
+
+
+
+.ohmd--dialog--blocker {
+	align-items: center;
+	background-color: rgba(0 0 0 / 0%);
+	bottom: 0;
+	display: none;
+	justify-content: center;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+	transition: 250ms;
+	z-index: 100;
+
+	> .ohmd--dialog--content {
+		box-shadow: 0 19px 60px rgba(0 0 0 / 30%);
+		box-sizing: border-box;
+		background-color: rgb(100 100 100);
+		display: inline-block;
+		max-height: calc(100vh - 20px);
+		overflow: auto;
+		padding: 17px;
+		max-width: calc(100vw - 20px);
+
+		> .ohmd--dialog--header {
+			flex: 0 0 auto;
+			font-size: 2em;
+			font-weight: bold;
+		}
+
+		> .ohmd--dialog--body {
+			flex: 1 1 auto;
+			font-size: 1.5em;
+			margin: 1.5em 0;
+			overflow: auto;
+
+			> .ohmd--dialog--body--row {
+				margin: 0.5em 0;
+
+				> label > input {
+					margin: 0 1em;
+				}
+			}
+		}
+
+		> .ohmd--dialog--footer {
+			flex: 0 0 auto;
+			text-align: right;
+
+			> button {
+				margin: 0 0.5em;
+			}
+		}
+	}
+
+	&.ohmd--dialog--preactive {
+		display: flex;
+	}
+
+	&.ohmd--dialog--active {
+		background-color: rgba(0 0 0 / 30%);
+		> .ohmd--dialog--content {
+			transform: translate(0,0) scale(1) !important;
+			transition: all 400ms ease-in-out;
 		}
 	}
 }

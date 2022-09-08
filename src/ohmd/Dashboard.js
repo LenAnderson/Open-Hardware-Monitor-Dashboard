@@ -1,6 +1,10 @@
 import { $, $$, wait } from "../lib/basics.js";
+import { Binding } from "../lib/Binding.js";
+import { Dialog } from "../lib/Dialog.js";
 import { ChartWidget } from "./ChartWidget.js";
 import { PixelService } from "./PixelService.js";
+import { Preferences } from "./Preferences.js";
+import { SettingsDialog } from "./SettingsDialog.js";
 import { Widget } from "./Widget.js";
 
 export class Dashboard {
@@ -19,10 +23,14 @@ export class Dashboard {
 
 	/**@type{Widget[]}*/ widgets = [];
 
+	/**@type{Preferences}*/ prefs;
+
 
 
 
 	constructor() {
+		this.prefs = new Preferences();
+		this.prefs.load();
 		this.buildDom();
 		this.pixel = new PixelService(this.container);
 
@@ -32,6 +40,17 @@ export class Dashboard {
 		if (this.widgets.length == 0) {
 			this.showOhm();
 		}
+
+		const gridBgConverter = v=>{
+			const bg = 'rgb(29, 29, 29)';
+			return [
+				`repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+				`repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+			].join(',');
+		};
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
+		Binding.create(this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
 
 		this.fetchData();
 	}
@@ -64,7 +83,27 @@ export class Dashboard {
 			}
 			document.body.append(ohm);
 		}
-		this.ohmContent.append(this.ohmHeader);
+		this.ohmContent.append(this.ohmHeader); {
+			const buttons = document.createElement('div'); {
+				buttons.classList.add('headerButtons');
+				const settingsBtn = document.createElement('button'); {
+					settingsBtn.classList.add('ohmd--settingsButton');
+					settingsBtn.textContent = 'Settings';
+					settingsBtn.addEventListener('click', async(evt)=>{
+						evt.preventDefault();
+						const dlg = new SettingsDialog(this.prefs);
+						await dlg.show(settingsBtn);
+						if (await dlg.outcome) {
+							this.prefs.snapToGrid = dlg.snapToGrid;
+							this.prefs.showGrid = dlg.showGrid;
+							this.prefs.gridSize = dlg.gridSize;
+						}
+					});
+					buttons.append(settingsBtn);
+				}
+				this.ohmHeader.append(buttons);
+			}
+		}
 		this.ohmContent.append(this.ohmMain);
 
 		const container = document.createElement('div'); {
@@ -156,11 +195,11 @@ export class Dashboard {
 
 
 	addChartWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.pixel, {sensor, name});
+		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addValueWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.pixel, {sensor, name});
+		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addWidget(/**@type{Widget}*/widget) {
@@ -174,7 +213,7 @@ export class Dashboard {
 		let widget;
 		switch (config.type) {
 			case 'chart': {
-				widget = new ChartWidget(this.pixel, config);
+				widget = new ChartWidget(this.prefs, this.pixel, config);
 				break;
 			}
 			case 'value': {

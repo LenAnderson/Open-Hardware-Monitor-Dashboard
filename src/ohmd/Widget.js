@@ -1,11 +1,13 @@
 import { log } from "../lib/basics.js";
 import { Binding } from "../lib/Binding.js";
 import { PixelService } from "./PixelService.js";
+import { Preferences } from "./Preferences.js";
 
 export class Widget {
 	/**@type{String}*/ sensor;
 	/**@type{String[]}*/ id;
 	/**@type{String}*/ name;
+	/**@type{Preferences}*/ prefs;
 	/**@type{PixelService}*/ pixel;
 
 	/**@type{HTMLDivElement}*/ dom;
@@ -15,6 +17,9 @@ export class Widget {
 	get left() { return this.#left; }
 	set left(value) {
 		if (this.#left != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#left = value;
 			if (this.dom) this.dom.style.left = `${value}px`;
 		}
@@ -23,6 +28,9 @@ export class Widget {
 	get top() { return this.#top; }
 	set top(value) {
 		if (this.#top != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#top = value;
 			if (this.dom) this.dom.style.top = `${value}px`;
 		}
@@ -37,10 +45,11 @@ export class Widget {
 
 
 
-	constructor(/**@type{PixelService}*/pixel, {/**@type{String}*/sensor, /**@type{String}*/name, /**@type{Number}*/left=0, /**@type{Number}*/top=0}) {
+	constructor(/**@type{Preferences}*/prefs, /**@type{PixelService}*/pixel, {/**@type{String}*/sensor, /**@type{String}*/name, /**@type{Number}*/left=0, /**@type{Number}*/top=0}) {
 		this.sensor = sensor;
 		this.id = sensor.split('---');
 		this.name = name;
+		this.prefs = prefs;
 		this.pixel = pixel;
 
 		this.left = left;

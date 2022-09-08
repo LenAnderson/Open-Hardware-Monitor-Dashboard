@@ -183,10 +183,12 @@ class PixelService {
 
 
 
+
 class Widget {
 	/**@type{String}*/ sensor;
 	/**@type{String[]}*/ id;
 	/**@type{String}*/ name;
+	/**@type{Preferences}*/ prefs;
 	/**@type{PixelService}*/ pixel;
 
 	/**@type{HTMLDivElement}*/ dom;
@@ -196,6 +198,9 @@ class Widget {
 	get left() { return this.#left; }
 	set left(value) {
 		if (this.#left != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#left = value;
 			if (this.dom) this.dom.style.left = `${value}px`;
 		}
@@ -204,6 +209,9 @@ class Widget {
 	get top() { return this.#top; }
 	set top(value) {
 		if (this.#top != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#top = value;
 			if (this.dom) this.dom.style.top = `${value}px`;
 		}
@@ -218,10 +226,11 @@ class Widget {
 
 
 
-	constructor(/**@type{PixelService}*/pixel, {/**@type{String}*/sensor, /**@type{String}*/name, /**@type{Number}*/left=0, /**@type{Number}*/top=0}) {
+	constructor(/**@type{Preferences}*/prefs, /**@type{PixelService}*/pixel, {/**@type{String}*/sensor, /**@type{String}*/name, /**@type{Number}*/left=0, /**@type{Number}*/top=0}) {
 		this.sensor = sensor;
 		this.id = sensor.split('---');
 		this.name = name;
+		this.prefs = prefs;
 		this.pixel = pixel;
 
 		this.left = left;
@@ -360,6 +369,9 @@ class ChartWidget extends Widget {
 	get width() { return this.#width; }
 	set width(value) {
 		if (this.#width != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#width = value;
 			if (this.dom) this.dom.style.width = `${value}px`;
 		}
@@ -368,6 +380,9 @@ class ChartWidget extends Widget {
 	get height() { return this.#height; }
 	set height(value) {
 		if (this.#height != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#height = value;
 			if (this.dom) this.dom.style.height = `${value}px`;
 		}
@@ -408,6 +423,7 @@ class ChartWidget extends Widget {
 
 
 	constructor(
+		/**@type{Preferences}*/prefs,
 		/**@type{PixelService}*/pixel,
 		{
 			/**@type{String}*/sensor,
@@ -420,7 +436,7 @@ class ChartWidget extends Widget {
 			/**@type{String}*/fillColor=null,
 		}
 		) {
-		super(pixel, {sensor, name});
+		super(prefs, pixel, {sensor, name});
 		this.buildDom();
 		this.left = left;
 		this.top = top;
@@ -613,6 +629,10 @@ class ChartWidget extends Widget {
 
 
 
+
+
+
+
 class Dashboard {
 	/**@type{HTMLDivElement}*/ ohmHeader;
 	/**@type{HTMLDivElement}*/ ohmMain;
@@ -629,10 +649,14 @@ class Dashboard {
 
 	/**@type{Widget[]}*/ widgets = [];
 
+	/**@type{Preferences}*/ prefs;
+
 
 
 
 	constructor() {
+		this.prefs = new Preferences();
+		this.prefs.load();
 		this.buildDom();
 		this.pixel = new PixelService(this.container);
 
@@ -642,6 +666,17 @@ class Dashboard {
 		if (this.widgets.length == 0) {
 			this.showOhm();
 		}
+
+		const gridBgConverter = v=>{
+			const bg = 'rgb(29, 29, 29)';
+			return [
+				`repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+				`repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+			].join(',');
+		};
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
+		Binding.create(this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
 
 		this.fetchData();
 	}
@@ -653,7 +688,7 @@ class Dashboard {
 		this.ohmWidth = $(this.ohmMain, '.treeTable').getBoundingClientRect().width + 40 + 15;
 
 		const style = document.createElement('style'); {
-			style.innerHTML = 'html,body {  margin: 0;  padding: 0;}body {  background-color: #1d1d1d;  display: flex;  flex-direction: row;}.ohmd--ohmContainer {  background-color: #969696;  box-sizing: border-box;  height: 100vh;  left: 0vw;  overflow: auto;  position: absolute;  top: 0;  transition: 200ms;  z-index: 2;}.ohmd--ohmContainer > .ohmd--ohmContainer-content {  box-sizing: border-box;  direction: rtl;  height: 100vh;  overflow: auto;  padding: 0 10px;}.ohmd--ohmContainer > .ohmd--ohmContainer-content > .header,.ohmd--ohmContainer > .ohmd--ohmContainer-content > .main {  direction: ltr;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle {  box-sizing: border-box;  background-color: transparent;  color: #ffffff;  cursor: pointer;  display: block;  height: 100vh;  line-height: 20px;  padding-top: calc(50vh - 30px);  position: absolute;  right: 0;  text-align: center;  top: 0;  width: 15px;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:after {  content: \"◀ ◀ ◀\";}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:hover {  background-color: rgba(60 60 60 / 50%);}.ohmd--ohmContainer.ohmd--collapsed {  background-color: transparent;}.ohmd--ohmContainer.ohmd--collapsed > .ohmd--ohmContainer-toggle:after {  content: \"▶ ▶ ▶\";}.ohmd--container {  flex: 1 1 100vw;  height: 100vh;  position: relative;  transform-origin: right;  transition: transform 200ms;}.ohmd--container > .ohmd--widget {  background-color: rgba(255 255 255 / 0%);  min-height: 40px;  overflow: hidden;  position: absolute;  transition: background-color ease-in-out 200ms;  min-width: 60px;}.ohmd--container > .ohmd--widget:hover,.ohmd--container > .ohmd--widget.ohmd--hovered {  background-color: rgba(255 255 255 / 25%);}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-header > .ohmd--widget-actions,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 1;}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-body > .ohmd--widget-resizer,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-body > .ohmd--widget-resizer {  opacity: 1;}.ohmd--container > .ohmd--widget > .ohmd--widget-header {  color: #73735a;  cursor: move;  font-weight: bold;  height: 20px;  margin-bottom: 5px;  position: relative;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-title {  font-size: 16px;  height: 18px;  overflow: hidden;  padding: 2px 50px 0 10px;  text-overflow: ellipsis;  white-space: nowrap;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 0;  position: absolute;  right: 0;  top: 0;  transition: opacity ease-in-out 200ms;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action {  display: inline-block;  height: 20px;  margin-left: 2px;  width: 20px;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-remove {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-config {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-chartContainer {  bottom: 0;  left: 0;  position: absolute;  right: 0;  top: 25px;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-resizer {  background-color: rgba(140, 140, 140, 0.5);  bottom: 0;  cursor: se-resize;  height: 10px;  opacity: 0;  position: absolute;  right: 0;  width: 26px;  background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);  transform: rotate(-45deg) translateX(4px) translateY(6px);}';
+			style.innerHTML = 'html,body {  margin: 0;  padding: 0;}body {  background-color: #1d1d1d;  display: flex;  flex-direction: row;}.header {  align-items: center;  display: flex;  flex-direction: row;  justify-content: space-between;}.ohmd--ohmContainer {  background-color: #969696;  box-sizing: border-box;  height: 100vh;  left: 0vw;  overflow: auto;  position: absolute;  top: 0;  transition: 200ms;  z-index: 2;}.ohmd--ohmContainer > .ohmd--ohmContainer-content {  box-sizing: border-box;  direction: rtl;  height: 100vh;  overflow: auto;  padding: 0 10px;}.ohmd--ohmContainer > .ohmd--ohmContainer-content > .header,.ohmd--ohmContainer > .ohmd--ohmContainer-content > .main {  direction: ltr;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle {  box-sizing: border-box;  background-color: transparent;  color: #646464;  cursor: pointer;  display: block;  height: 100vh;  line-height: 20px;  padding-top: calc(50vh - 30px);  position: absolute;  right: 0;  text-align: center;  top: 0;  width: 15px;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:after {  content: \"◀ ◀ ◀\";}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:hover {  background-color: rgba(60 60 60 / 50%);}.ohmd--ohmContainer.ohmd--collapsed {  background-color: transparent;}.ohmd--ohmContainer.ohmd--collapsed > .ohmd--ohmContainer-toggle:after {  content: \"▶ ▶ ▶\";}.ohmd--container {  flex: 1 1 100vw;  height: 100vh;  position: relative;  transform-origin: right;  transition: transform 200ms;}.ohmd--container > .ohmd--widget {  background-color: rgba(255 255 255 / 0%);  min-height: 40px;  overflow: hidden;  position: absolute;  transition: background-color ease-in-out 200ms;  min-width: 60px;}.ohmd--container > .ohmd--widget:hover,.ohmd--container > .ohmd--widget.ohmd--hovered {  background-color: rgba(255 255 255 / 25%);}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-header > .ohmd--widget-actions,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 1;}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-body > .ohmd--widget-resizer,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-body > .ohmd--widget-resizer {  opacity: 1;}.ohmd--container > .ohmd--widget > .ohmd--widget-header {  color: #73735a;  cursor: move;  font-weight: bold;  height: 20px;  margin-bottom: 5px;  position: relative;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-title {  font-size: 16px;  height: 18px;  overflow: hidden;  padding: 2px 50px 0 10px;  text-overflow: ellipsis;  white-space: nowrap;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 0;  position: absolute;  right: 0;  top: 0;  transition: opacity ease-in-out 200ms;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action {  display: inline-block;  height: 20px;  margin-left: 2px;  width: 20px;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-remove {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-config {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-chartContainer {  bottom: 0;  left: 0;  position: absolute;  right: 0;  top: 25px;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-resizer {  background-color: rgba(140, 140, 140, 0.5);  bottom: 0;  cursor: se-resize;  height: 10px;  opacity: 0;  position: absolute;  right: 0;  width: 26px;  background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);  transform: rotate(-45deg) translateX(4px) translateY(6px);}.ohmd--dialog--blocker {  align-items: center;  background-color: rgba(0 0 0 / 0%);  bottom: 0;  display: none;  justify-content: center;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms;  z-index: 100;}.ohmd--dialog--blocker > .ohmd--dialog--content {  box-shadow: 0 19px 60px rgba(0 0 0 / 30%);  box-sizing: border-box;  background-color: #646464;  display: inline-block;  max-height: calc(100vh - 20px);  overflow: auto;  padding: 17px;  max-width: calc(100vw - 20px);}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--header {  flex: 0 0 auto;  font-size: 2em;  font-weight: bold;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body {  flex: 1 1 auto;  font-size: 1.5em;  margin: 1.5em 0;  overflow: auto;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row {  margin: 0.5em 0;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row > label > input {  margin: 0 1em;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer {  flex: 0 0 auto;  text-align: right;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer > button {  margin: 0 0.5em;}.ohmd--dialog--blocker.ohmd--dialog--preactive {  display: flex;}.ohmd--dialog--blocker.ohmd--dialog--active {  background-color: rgba(0 0 0 / 30%);}.ohmd--dialog--blocker.ohmd--dialog--active > .ohmd--dialog--content {  transform: translate(0, 0) scale(1) !important;  transition: all 400ms ease-in-out;}';
 			document.body.append(style);
 		}
 
@@ -674,7 +709,27 @@ class Dashboard {
 			}
 			document.body.append(ohm);
 		}
-		this.ohmContent.append(this.ohmHeader);
+		this.ohmContent.append(this.ohmHeader); {
+			const buttons = document.createElement('div'); {
+				buttons.classList.add('headerButtons');
+				const settingsBtn = document.createElement('button'); {
+					settingsBtn.classList.add('ohmd--settingsButton');
+					settingsBtn.textContent = 'Settings';
+					settingsBtn.addEventListener('click', async(evt)=>{
+						evt.preventDefault();
+						const dlg = new SettingsDialog(this.prefs);
+						await dlg.show(settingsBtn);
+						if (await dlg.outcome) {
+							this.prefs.snapToGrid = dlg.snapToGrid;
+							this.prefs.showGrid = dlg.showGrid;
+							this.prefs.gridSize = dlg.gridSize;
+						}
+					});
+					buttons.append(settingsBtn);
+				}
+				this.ohmHeader.append(buttons);
+			}
+		}
 		this.ohmContent.append(this.ohmMain);
 
 		const container = document.createElement('div'); {
@@ -766,11 +821,11 @@ class Dashboard {
 
 
 	addChartWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.pixel, {sensor, name});
+		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addValueWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.pixel, {sensor, name});
+		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addWidget(/**@type{Widget}*/widget) {
@@ -784,7 +839,7 @@ class Dashboard {
 		let widget;
 		switch (config.type) {
 			case 'chart': {
-				widget = new ChartWidget(this.pixel, config);
+				widget = new ChartWidget(this.prefs, this.pixel, config);
 				break;
 			}
 			case 'value': {
@@ -821,6 +876,260 @@ class Dashboard {
 			this.widgets.forEach(widget=>widget.setData(data));
 			await wait(1000);
 		}
+	}
+}
+
+
+// src\lib\Dialog.js
+
+
+
+class Dialog {
+	/**@type{HTMLDivElement}*/ blocker;
+	/**@type{HTMLDivElement}*/ content;
+	/**@type{HTMLDivElement}*/ header;
+	/**@type{HTMLDivElement}*/ body;
+	/**@type{HTMLDivElement}*/ footer;
+
+	/**@type{String}*/ title;
+	/**@type{String}*/ affirmative = 'OK';
+	/**@type{String}*/ negative = null;
+
+	/**@type{HTMLElement}*/ trigger;
+
+	/**@type{Promise}*/ outcome;
+	/**@type{Function}*/ outcomeResolver;
+
+
+
+
+	constructor(/**@type{String}*/title, /**@type{String}*/affirmative='OK', /**@type{String}*/negative=null) {
+		this.buildDom();
+
+		this.title = title;
+		this.affirmative = affirmative;
+		this.negative = negative;
+	}
+
+	buildDom() {
+		const blocker = document.createElement('div'); {
+			this.blocker = blocker;
+			blocker.classList.add('ohmd--dialog--blocker');
+			const content = document.createElement('div'); {
+				this.content = content;
+				content.classList.add('ohmd--dialog--content');
+				const header = document.createElement('div'); {
+					this.header = header;
+					header.classList.add('ohmd--dialog--header');
+					Binding.create(this, 'title', header, 'textContent');
+					content.append(header);
+				}
+				const body = document.createElement('div'); {
+					this.body = body;
+					body.classList.add('ohmd--dialog--body');
+					content.append(body);
+				}
+				const footer = document.createElement('div'); {
+					this.footer = footer;
+					footer.classList.add('ohmd--dialog--footer');
+					const affBtn = document.createElement('button'); {
+						affBtn.classList.add('ohmd--dialog--button--affirmative');
+						Binding.create(this, 'affirmative', affBtn, 'textContent');
+						affBtn.addEventListener('click', ()=>this.hide(true));
+						footer.append(affBtn);
+					}
+					const negBtn = document.createElement('button'); {
+						negBtn.classList.add('ohmd--dialog--button--negative');
+						Binding.create(this, 'negative', negBtn, 'textContent');
+						Binding.create(this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
+						negBtn.addEventListener('click', ()=>this.hide(false));
+						footer.append(negBtn);
+					}
+					content.append(footer);
+				}
+				blocker.append(content);
+			}
+			document.body.append(blocker);
+		}
+	}
+
+
+
+
+	async show(/**@type{HTMLElement}*/trigger) {
+		this.outcome = new Promise(resolve=>this.outcomeResolver=resolve);
+		this.trigger = trigger;
+		this.blocker.classList.add('ohmd--dialog--preactive');
+
+		const rect = this.content.getBoundingClientRect();
+		const triggerRect = trigger.getBoundingClientRect();
+		const x = `${Math.round((triggerRect.left + triggerRect.width * 0.5) - (rect.left + rect.width * 0.5))}px`;
+		const y = `${Math.round((triggerRect.top + triggerRect.height * 0.5) - (rect.top + rect.height * 0.5))}px`;
+		this.content.style.transform = `translate(${x}, ${y}) scale(0)`;
+		await wait(20);
+
+		this.blocker.classList.add('ohmd--dialog--active');
+		await wait(410);
+		this.content.style.transition = 'all 400ms ease-in-out';
+	}
+
+	async hide(/**@type{Boolean}*/isAffirmative) {
+		if (this.trigger) {
+			await this.hideToTrigger();
+		} else {
+			await this.hideToTop();
+		}
+		this.outcomeResolver(isAffirmative);
+	}
+
+	async hideToTrigger() {
+		const rect = this.content.getBoundingClientRect();
+		const triggerRect = this.trigger.getBoundingClientRect();
+		const x = `${Math.round((triggerRect.left + triggerRect.width * 0.5) - (rect.left + rect.width * 0.5))}px`;
+		const y = `${Math.round((triggerRect.top + triggerRect.height * 0.5) - (rect.top + rect.height * 0.5))}px`;
+		this.content.style.transform = `translate(${x}, ${y}) scale(0)`;
+
+		this.blocker.classList.remove('ohmd--dialog--active');
+		await wait(400);
+
+		this.blocker.classList.remove('ohmd--dialog--preactive');
+		this.content.style.transform = '';
+		this.content.style.transition = '';
+		this.trigger = null;
+	}
+
+	async hideToTop() {
+		const rect = this.content.getBoundingClientRect();
+		this.content.style.transform = `translate(0, ${-rect.bottom}px) scale(1)`;
+
+		this.blocker.classList.remove('ohmd--dialog--active');
+		await wait(400);
+
+		this.blocker.classList.remove('ohmd--dialog--preactive');
+		this.content.style.transform = '';
+		this.content.style.transition = '';
+		this.trigger = null;
+	}
+}
+
+
+// src\ohmd\SettingsDialog.js
+
+
+
+
+class SettingsDialog extends Dialog {
+	/**@type{Boolean}*/ snapToGrid = true;
+	/**@type{Boolean}*/ showGrid = false;
+	/**@type{Number}*/ gridSize = 10;
+
+
+
+
+	constructor(/**@type{Preferences}*/prefs) {
+		super('Settings', 'OK', 'Cancel');
+		this.snapToGrid = prefs.snapToGrid;
+		this.showGrid = prefs.showGrid;
+		this.gridSize = prefs.gridSize;
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const snapRow = document.createElement('div'); {
+			snapRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				const inp = document.createElement('input'); {
+					inp.type = 'checkbox';
+					inp.placeholder = 'Snap to Grid';
+					Binding.create(this, 'snapToGrid', inp, 'checked');
+					lbl.append(inp);
+				}
+				lbl.append(document.createTextNode('Snap to Grid'));
+				snapRow.append(lbl);
+			}
+			this.body.append(snapRow);
+		}
+
+		const showRow = document.createElement('div'); {
+			showRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				const inp = document.createElement('input'); {
+					inp.type = 'checkbox';
+					inp.placeholder = 'Show Grid';
+					Binding.create(this, 'showGrid', inp, 'checked');
+					lbl.append(inp);
+				}
+				lbl.append(document.createTextNode('Show Grid'));
+				showRow.append(lbl);
+			}
+			this.body.append(showRow);
+		}
+
+		const sizeRow = document.createElement('div'); {
+			sizeRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Grid Size'));
+				const inp = document.createElement('input'); {
+					inp.type = 'number';
+					inp.max = 999;
+					inp.min = 5;
+					inp.placeholder = 'Grid Size';
+					Binding.create(this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				sizeRow.append(lbl);
+			}
+			this.body.append(sizeRow);
+		}
+	}
+}
+
+
+// src\ohmd\Preferences.js
+class Preferences {
+	/**@type{Boolean}*/ #snapToGrid = true;
+	get snapToGrid() { return this.#snapToGrid ?? true; }
+	set snapToGrid(/**@type{Boolean}*/value) {
+		if (this.#snapToGrid != value) {
+			this.#snapToGrid = value;
+			this.save();
+		}
+	}
+
+	/**@type{Boolean}*/ #showGrid = true;
+	get showGrid() { return this.#showGrid ?? true; }
+	set showGrid(/**@type{Boolean}*/value) {
+		if (this.#showGrid != value) {
+			this.#showGrid = value;
+			this.save();
+		}
+	}
+
+	/**@type{Number}*/ #gridSize = 1;
+	get gridSize() { return this.#gridSize ?? 1; }
+	set gridSize(/**@type{Number}*/value) {
+		if (this.#gridSize != value) {
+			this.#gridSize = value;
+			this.save();
+		}
+	}
+
+
+
+
+	save() {
+		localStorage.setItem('ohmd-preferences', JSON.stringify({
+			snapToGrid: this.snapToGrid,
+			showGrid: this.showGrid,
+			gridSize: this.gridSize,
+		}));
+	}
+	load() {
+		const prefs = JSON.parse(localStorage.getItem('ohmd-preferences') || '{}');
+		this.snapToGrid = prefs.snapToGrid ?? true;
+		this.showGrid = prefs.showGrid ?? false;
+		this.gridSize = prefs.gridSize ?? 1;
 	}
 }
 // ---------------- /IMPORTS ----------------

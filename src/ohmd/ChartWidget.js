@@ -8,6 +8,9 @@ export class ChartWidget extends Widget {
 	get width() { return this.#width; }
 	set width(value) {
 		if (this.#width != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#width = value;
 			if (this.dom) this.dom.style.width = `${value}px`;
 		}
@@ -16,6 +19,9 @@ export class ChartWidget extends Widget {
 	get height() { return this.#height; }
 	set height(value) {
 		if (this.#height != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
 			this.#height = value;
 			if (this.dom) this.dom.style.height = `${value}px`;
 		}
@@ -56,6 +62,7 @@ export class ChartWidget extends Widget {
 
 
 	constructor(
+		/**@type{Preferences}*/prefs,
 		/**@type{PixelService}*/pixel,
 		{
 			/**@type{String}*/sensor,
@@ -68,7 +75,7 @@ export class ChartWidget extends Widget {
 			/**@type{String}*/fillColor=null,
 		}
 		) {
-		super(pixel, {sensor, name});
+		super(prefs, pixel, {sensor, name});
 		this.buildDom();
 		this.left = left;
 		this.top = top;
