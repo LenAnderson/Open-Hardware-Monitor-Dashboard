@@ -122,9 +122,7 @@ export class ChartWidget extends Widget {
 						maintainAspectRatio: false,
 						scales: {
 							yAxis: {
-								ticks: {
-									suggestedMin: 0,
-								},
+								suggestedMin: 0,
 								gridLines: {
 									color: 'rgba(50,50,50,0.5)',
 								},
