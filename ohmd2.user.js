@@ -669,6 +669,7 @@ class ChartWidget extends Widget {
 
 
 
+
 class Dashboard {
 	/**@type{HTMLDivElement}*/ ohmHeader;
 	/**@type{HTMLDivElement}*/ ohmMain;
@@ -724,7 +725,7 @@ class Dashboard {
 		this.ohmWidth = $(this.ohmMain, '.treeTable').getBoundingClientRect().width + 40 + 15;
 
 		const style = document.createElement('style'); {
-			style.innerHTML = 'html,body {  margin: 0;  padding: 0;}body {  background-color: #1d1d1d;  display: flex;  flex-direction: row;}.header {  align-items: center;  display: flex;  flex-direction: row;  justify-content: space-between;}.ohmd--ohmContainer {  background-color: #969696;  box-sizing: border-box;  height: 100vh;  left: 0vw;  overflow: auto;  position: absolute;  top: 0;  transition: 200ms;  z-index: 2;}.ohmd--ohmContainer > .ohmd--ohmContainer-content {  box-sizing: border-box;  direction: rtl;  height: 100vh;  overflow: auto;  padding: 0 10px;}.ohmd--ohmContainer > .ohmd--ohmContainer-content > .header,.ohmd--ohmContainer > .ohmd--ohmContainer-content > .main {  direction: ltr;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle {  box-sizing: border-box;  background-color: transparent;  color: #646464;  cursor: pointer;  display: block;  height: 100vh;  line-height: 20px;  padding-top: calc(50vh - 30px);  position: absolute;  right: 0;  text-align: center;  top: 0;  width: 15px;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:after {  content: \"◀ ◀ ◀\";}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:hover {  background-color: rgba(60 60 60 / 50%);}.ohmd--ohmContainer.ohmd--collapsed {  background-color: transparent;}.ohmd--ohmContainer.ohmd--collapsed > .ohmd--ohmContainer-toggle:after {  content: \"▶ ▶ ▶\";}.ohmd--container {  flex: 1 1 100vw;  height: 100vh;  position: relative;  transform-origin: right;  transition: transform 200ms;}.ohmd--container > .ohmd--widget {  background-color: rgba(255 255 255 / 0%);  min-height: 40px;  overflow: hidden;  position: absolute;  transition: background-color ease-in-out 200ms;  min-width: 60px;}.ohmd--container > .ohmd--widget:hover,.ohmd--container > .ohmd--widget.ohmd--hovered {  background-color: rgba(255 255 255 / 25%);}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-header > .ohmd--widget-actions,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 1;}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-body > .ohmd--widget-resizer,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-body > .ohmd--widget-resizer {  opacity: 1;}.ohmd--container > .ohmd--widget > .ohmd--widget-header {  color: #73735a;  cursor: move;  font-weight: bold;  height: 20px;  margin-bottom: 5px;  position: relative;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-title {  font-size: 16px;  height: 18px;  overflow: hidden;  padding: 2px 50px 0 10px;  text-overflow: ellipsis;  white-space: nowrap;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 0;  position: absolute;  right: 0;  top: 0;  transition: opacity ease-in-out 200ms;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action {  display: inline-block;  height: 20px;  margin-left: 2px;  width: 20px;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-remove {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-config {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-chartContainer {  bottom: 0;  left: 0;  position: absolute;  right: 0;  top: 25px;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-resizer {  background-color: rgba(140, 140, 140, 0.5);  bottom: 0;  cursor: se-resize;  height: 10px;  opacity: 0;  position: absolute;  right: 0;  width: 26px;  background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);  transform: rotate(-45deg) translateX(4px) translateY(6px);}.ohmd--dialog--blocker {  align-items: center;  background-color: rgba(0 0 0 / 0%);  bottom: 0;  display: none;  justify-content: center;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms;  z-index: 100;}.ohmd--dialog--blocker > .ohmd--dialog--content {  box-shadow: 0 19px 60px rgba(0 0 0 / 30%);  box-sizing: border-box;  background-color: #646464;  display: inline-block;  max-height: calc(100vh - 20px);  overflow: auto;  padding: 17px;  max-width: calc(100vw - 20px);}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--header {  flex: 0 0 auto;  font-size: 2em;  font-weight: bold;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body {  flex: 1 1 auto;  font-size: 1.5em;  margin: 1.5em 0;  overflow: auto;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row {  margin: 0.5em 0;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row > label > input {  margin: 0 1em;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer {  flex: 0 0 auto;  text-align: right;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer > button {  margin: 0 0.5em;}.ohmd--dialog--blocker.ohmd--dialog--preactive {  display: flex;}.ohmd--dialog--blocker.ohmd--dialog--active {  background-color: rgba(0 0 0 / 30%);}.ohmd--dialog--blocker.ohmd--dialog--active > .ohmd--dialog--content {  transform: translate(0, 0) scale(1) !important;  transition: all 400ms ease-in-out;}';
+			style.innerHTML = 'html,body {  margin: 0;  padding: 0;}body {  background-color: #1d1d1d;  display: flex;  flex-direction: row;}.header {  align-items: center;  display: flex;  flex-direction: row;  justify-content: space-between;}.ohmd--ohmContainer {  background-color: #969696;  box-sizing: border-box;  height: 100vh;  left: 0vw;  overflow: auto;  position: absolute;  top: 0;  transition: 200ms;  z-index: 2;}.ohmd--ohmContainer > .ohmd--ohmContainer-content {  box-sizing: border-box;  direction: rtl;  height: 100vh;  overflow: auto;  padding: 0 10px;}.ohmd--ohmContainer > .ohmd--ohmContainer-content > .header,.ohmd--ohmContainer > .ohmd--ohmContainer-content > .main {  direction: ltr;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle {  box-sizing: border-box;  background-color: transparent;  color: #646464;  cursor: pointer;  display: block;  height: 100vh;  line-height: 20px;  padding-top: calc(50vh - 30px);  position: absolute;  right: 0;  text-align: center;  top: 0;  width: 15px;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:after {  content: \"◀ ◀ ◀\";}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:hover {  background-color: rgba(60 60 60 / 50%);}.ohmd--ohmContainer.ohmd--collapsed {  background-color: transparent;}.ohmd--ohmContainer.ohmd--collapsed > .ohmd--ohmContainer-toggle:after {  content: \"▶ ▶ ▶\";}.ohmd--container {  flex: 1 1 100vw;  height: 100vh;  position: relative;  transform-origin: right;  transition: transform 200ms;}.ohmd--container > .ohmd--widget {  background-color: rgba(255 255 255 / 0%);  min-height: 40px;  overflow: hidden;  position: absolute;  transition: background-color ease-in-out 200ms;  min-width: 60px;}.ohmd--container > .ohmd--widget:hover,.ohmd--container > .ohmd--widget.ohmd--hovered {  background-color: rgba(255 255 255 / 25%);}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-header > .ohmd--widget-actions,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 1;}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-body > .ohmd--widget-resizer,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-body > .ohmd--widget-resizer {  opacity: 1;}.ohmd--container > .ohmd--widget > .ohmd--widget-header {  color: #73735a;  cursor: move;  font-weight: bold;  height: 20px;  margin-bottom: 5px;  position: relative;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-title {  font-size: 16px;  height: 18px;  overflow: hidden;  padding: 2px 50px 0 10px;  text-overflow: ellipsis;  white-space: nowrap;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 0;  position: absolute;  right: 0;  top: 0;  transition: opacity ease-in-out 200ms;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action {  display: inline-block;  height: 20px;  margin-left: 2px;  width: 20px;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-remove {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-config {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-chartContainer {  bottom: 0;  left: 0;  position: absolute;  right: 0;  top: 25px;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-valueContainer > .ohmd--widget-value {  text-align: right;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-resizer {  background-color: rgba(140, 140, 140, 0.5);  bottom: 0;  cursor: se-resize;  height: 10px;  opacity: 0;  position: absolute;  right: 0;  width: 26px;  background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);  transform: rotate(-45deg) translateX(4px) translateY(6px);}.ohmd--dialog--blocker {  align-items: center;  background-color: rgba(0 0 0 / 0%);  bottom: 0;  display: none;  justify-content: center;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms;  z-index: 100;}.ohmd--dialog--blocker > .ohmd--dialog--content {  box-shadow: 0 19px 60px rgba(0 0 0 / 30%);  box-sizing: border-box;  background-color: #646464;  display: inline-block;  max-height: calc(100vh - 20px);  overflow: auto;  padding: 17px;  max-width: calc(100vw - 20px);}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--header {  flex: 0 0 auto;  font-size: 2em;  font-weight: bold;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body {  flex: 1 1 auto;  font-size: 1.5em;  margin: 1.5em 0;  overflow: auto;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row {  margin: 0.5em 0;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row > label > input {  margin: 0 1em;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer {  flex: 0 0 auto;  text-align: right;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer > button {  margin: 0 0.5em;}.ohmd--dialog--blocker.ohmd--dialog--preactive {  display: flex;}.ohmd--dialog--blocker.ohmd--dialog--active {  background-color: rgba(0 0 0 / 30%);}.ohmd--dialog--blocker.ohmd--dialog--active > .ohmd--dialog--content {  transform: translate(0, 0) scale(1) !important;  transition: all 400ms ease-in-out;}';
 			document.body.append(style);
 		}
 
@@ -861,7 +862,7 @@ class Dashboard {
 		this.addWidget(widget);
 	}
 	addValueWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
+		const widget = new ValueWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addWidget(/**@type{Widget}*/widget) {
@@ -879,6 +880,7 @@ class Dashboard {
 				break;
 			}
 			case 'value': {
+				widget = new ValueWidget(this.prefs, this.pixel, config);
 				break;
 			}
 		}
@@ -1273,7 +1275,7 @@ class ChartWidgetDialog extends Dialog {
 					picker.placeholder = 'Line Color';
 					Binding.create(this.prefs, 'lineColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
-						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
 					lbl.append(picker);
 				}
@@ -1316,7 +1318,7 @@ class ChartWidgetDialog extends Dialog {
 					picker.placeholder = 'Fill Color';
 					Binding.create(this.prefs, 'fillColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
-						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
 					lbl.append(picker);
 				}
@@ -1355,6 +1357,280 @@ class ChartWidgetDialog extends Dialog {
 				maxRow.append(lbl);
 			}
 			this.body.append(maxRow);
+		}
+	}
+}
+
+
+// src\ohmd\ValueWidget.js
+
+
+
+class ValueWidget extends Widget {
+	/**@type{String}*/ #color;
+	get color() { return this.#color; }
+	set color(value) {
+		if (this.#color != value) {
+			this.#color = value;
+			this.value.style.color = `rgba(${value.join(', ')})`;
+			this.unit.style.color = `rgba(${value.join(', ')})`;
+		}
+	}
+	
+	/**@type{Number}*/ #fontSize;
+	get fontSize() { return this.#fontSize; }
+	set fontSize(value) {
+		if (this.#fontSize != value) {
+			this.#fontSize = value;
+			this.value.style.fontSize = `${value}px`;
+			this.unit.style.fontSize = `${value}px`;
+		}
+	}
+
+	/**@type{String}*/ format;
+
+	/**@type{HTMLDivElement}*/ value;
+
+
+
+
+	constructor(
+		/**@type{Preferences}*/prefs,
+		/**@type{PixelService}*/pixel,
+		{
+			/**@type{String}*/sensor,
+			/**@type{String}*/name,
+			/**@type{Number}*/left=0,
+			/**@type{Number}*/top=0,
+			/**@type{String}*/color=null,
+			/**@type{Number}*/fontSize=null,
+			/**@type{String}*/format=null,
+		}
+	) {
+		super(prefs, pixel, {sensor, name});
+		this.buildDom();
+		this.left = left;
+		this.top = top;
+		if (color === null) {
+			if (this.sensor.toLowerCase().search('nvidia') != -1) {
+				this.color = [118, 185, 0, 1];
+			} else if (this.sensor.toLowerCase().search('intel') != -1) {
+				this.color = [0, 113, 197, 1];
+			} else {
+				this.color = [115, 115, 90, 1];
+			}
+		} else {
+			this.color = color;
+		}
+		this.fontSize = fontSize ?? 32;
+		this.format = format ?? '0';
+	}
+
+
+	buildDom() {
+		super.buildDom();
+
+		const container = document.createElement('div'); {
+			container.classList.add('ohmd--widget-valueContainer');
+			const value = document.createElement('div'); {
+				this.value = value,
+				value.classList.add('ohmd--widget-value');
+				container.append(value);
+			}
+			const unit = document.createElement('div'); {
+				this.unit = unit;
+				unit.classList.add('ohmd--widget-unit');
+				container.append(unit);
+			}
+			this.body.append(container);
+		}
+	}
+
+
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		const dlg = new ValueWidgetDialog(this.getConfig());
+		await dlg.show(trigger);
+		if (await dlg.outcome) {
+			this.name = dlg.name,
+			this.color = dlg.color;
+			this.fontSize = dlg.fontSize;
+			this.format = dlg.format;
+			this.fireUpdate();
+		}
+	}
+
+
+	getConfig() {
+		return {
+			type: 'value',
+			sensor: this.sensor,
+			name: this.name,
+			left: this.left,
+			top: this.top,
+			color: this.color,
+			format: this.format,
+			fontSize: this.fontSize,
+		}
+	}
+
+
+
+
+	setData(data) {
+		let item = data;
+		for (const part of this.id) {
+			item = item.Children.find(it=>it.Text == part);
+			if (!item) break;
+		}
+		if (!item) {
+			//TODO error
+			log('error')
+		} else {
+			const value = parseFloat(item.Value.replace(',', '.'));
+			const parts = this.format.match(/(\d+)(?:([\.,:])(\d+))?(?:(\s*)\$(.+))?/);
+			if (parts[2] == undefined) parts[2] = '';
+			if (parts[3] == undefined) parts[3] = '';
+			if (parts[4] == undefined) parts[4] = '';
+			if (parts[5] == undefined) parts[5] = '';
+			let out = '';
+			let leading = '';
+			const p1l = parseInt(value).toString().length;
+			if (parts[1].length > 0 && p1l < parts[1].length) {
+				leading = '0'.repeat(parts[1].length - p1l);
+			}
+			out += parseInt(value);
+			if (parts[2].length > 0) {
+				out += parts[2];
+			}
+			if (parts[3].length > 0) {
+				out += value.toFixed(parts[3].length).slice(-parts[3].length);
+			}
+			if (parts[5].length > 0) {
+				out += `${parts[4]}${parts[5]}`;
+			}
+			this.value.textContent = `${leading}${out}`;
+		}
+	}
+}
+
+
+// src\ohmd\ValueWidgetDialog.js
+
+
+class ValueWidgetDialog extends Dialog {
+	/**@type{String}*/ name;
+	/**@type{String}*/ color;
+	/**@type{String}*/ format;
+	/**@type{Number}*/ fontSize;
+
+
+
+
+	constructor({/**@type{String}*/name, /**@type{String}*/color, /**@type{String}*/format, /**@type{Number}*/fontSize}) {
+		super('Widget Settings', 'OK', 'Cancel');
+		this.name = name;
+		this.color = color;
+		this.format = format;
+		this.fontSize = fontSize;
+
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const nameRow = document.createElement('div'); {
+			nameRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Name'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Name';
+					Binding.create(this, 'name', inp, 'value');
+					lbl.append(inp);
+				}
+				nameRow.append(lbl);
+			}
+			this.body.append(nameRow);
+		}
+		
+		const lineColorRow = document.createElement('div'); {
+			lineColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Color';
+					Binding.create(this, 'color', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this, 'color', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Color';
+					Binding.create(this, 'color', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				lineColorRow.append(lbl);
+			}
+			this.body.append(lineColorRow);
+		}
+		
+		const sizeRow = document.createElement('div'); {
+			sizeRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Font Size'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'Font Size';
+					inp.min = 1;
+					inp.max = 999;
+					Binding.create(this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				sizeRow.append(lbl);
+			}
+			this.body.append(sizeRow);
+		}
+		
+		const formatRow = document.createElement('div'); {
+			formatRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Format'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Format';
+					Binding.create(this, 'format', inp, 'value');
+					lbl.append(inp);
+				}
+				formatRow.append(lbl);
+			}
+			this.body.append(formatRow);
 		}
 	}
 }

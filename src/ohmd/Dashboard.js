@@ -5,6 +5,7 @@ import { ChartWidget } from "./ChartWidget.js";
 import { PixelService } from "./PixelService.js";
 import { Preferences } from "./Preferences.js";
 import { SettingsDialog } from "./SettingsDialog.js";
+import { ValueWidget } from "./ValueWidget.js";
 import { Widget } from "./Widget.js";
 
 export class Dashboard {
@@ -199,7 +200,7 @@ export class Dashboard {
 		this.addWidget(widget);
 	}
 	addValueWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
-		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
+		const widget = new ValueWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
 	addWidget(/**@type{Widget}*/widget) {
@@ -217,6 +218,7 @@ export class Dashboard {
 				break;
 			}
 			case 'value': {
+				widget = new ValueWidget(this.prefs, this.pixel, config);
 				break;
 			}
 		}

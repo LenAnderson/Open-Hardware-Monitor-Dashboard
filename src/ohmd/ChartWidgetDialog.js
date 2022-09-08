@@ -67,7 +67,7 @@ export class ChartWidgetDialog extends Dialog {
 					picker.placeholder = 'Line Color';
 					Binding.create(this.prefs, 'lineColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
-						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
 					lbl.append(picker);
 				}
@@ -110,7 +110,7 @@ export class ChartWidgetDialog extends Dialog {
 					picker.placeholder = 'Fill Color';
 					Binding.create(this.prefs, 'fillColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
-						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(4,5), 16), parseInt(v.substring(6,7), 16), parseInt(opacity.value)/100]
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
 					lbl.append(picker);
 				}
