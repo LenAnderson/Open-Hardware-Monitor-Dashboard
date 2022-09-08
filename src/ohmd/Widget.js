@@ -1,4 +1,4 @@
-import { log } from "../lib/basics.js";
+import { error, log } from "../lib/basics.js";
 import { Binding } from "../lib/Binding.js";
 import { PixelService } from "./PixelService.js";
 import { Preferences } from "./Preferences.js";
@@ -174,7 +174,7 @@ export class Widget {
 		}
 		if (!item) {
 			//TODO error
-			log('error')
+			error('error')
 		} else {
 			//TODO data
 			log(item.Value);

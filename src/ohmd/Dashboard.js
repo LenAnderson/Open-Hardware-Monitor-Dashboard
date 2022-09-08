@@ -5,6 +5,7 @@ import { ChartWidget } from "./ChartWidget.js";
 import { PixelService } from "./PixelService.js";
 import { Preferences } from "./Preferences.js";
 import { SettingsDialog } from "./SettingsDialog.js";
+import { TimeWidget } from "./TimeWidget.js";
 import { ValueWidget } from "./ValueWidget.js";
 import { Widget } from "./Widget.js";
 
@@ -101,6 +102,15 @@ export class Dashboard {
 						}
 					});
 					buttons.append(settingsBtn);
+				}
+				const timeBtn = document.createElement('button'); {
+					timeBtn.classList.add('ohmd--timeButton');
+					timeBtn.textContent = 'Time Widget';
+					timeBtn.addEventListener('click', async(evt)=>{
+						evt.preventDefault();
+						this.addTimeWidget();
+					});
+					buttons.append(timeBtn);
 				}
 				this.ohmHeader.append(buttons);
 			}
@@ -203,6 +213,10 @@ export class Dashboard {
 		const widget = new ValueWidget(this.prefs, this.pixel, {sensor, name});
 		this.addWidget(widget);
 	}
+	addTimeWidget() {
+		const widget = new TimeWidget(this.prefs, this.pixel, {});
+		this.addWidget(widget);
+	}
 	addWidget(/**@type{Widget}*/widget) {
 		widget.onUpdate = ()=>this.saveWidgets();
 		widget.onRemove = (w)=>this.removeWidget(w);
@@ -219,6 +233,10 @@ export class Dashboard {
 			}
 			case 'value': {
 				widget = new ValueWidget(this.prefs, this.pixel, config);
+				break;
+			}
+			case 'time': {
+				widget = new TimeWidget(this.prefs, this.pixel, config);
 				break;
 			}
 		}

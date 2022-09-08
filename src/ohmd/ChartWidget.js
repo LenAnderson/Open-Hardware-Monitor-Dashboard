@@ -263,7 +263,7 @@ export class ChartWidget extends Widget {
 		}
 		if (!item) {
 			//TODO error
-			log('error')
+			error('error')
 		} else {
 			//TODO data
 			this.data?.push(parseFloat(item.Value.replace(',', '.')));

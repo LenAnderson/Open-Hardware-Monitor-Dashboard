@@ -8,7 +8,6 @@ export class ValueWidget extends Widget {
 		if (this.#color != value) {
 			this.#color = value;
 			this.value.style.color = `rgba(${value.join(', ')})`;
-			this.unit.style.color = `rgba(${value.join(', ')})`;
 		}
 	}
 	
@@ -18,7 +17,6 @@ export class ValueWidget extends Widget {
 		if (this.#fontSize != value) {
 			this.#fontSize = value;
 			this.value.style.fontSize = `${value}px`;
-			this.unit.style.fontSize = `${value}px`;
 		}
 	}
 
@@ -72,11 +70,6 @@ export class ValueWidget extends Widget {
 				value.classList.add('ohmd--widget-value');
 				container.append(value);
 			}
-			const unit = document.createElement('div'); {
-				this.unit = unit;
-				unit.classList.add('ohmd--widget-unit');
-				container.append(unit);
-			}
 			this.body.append(container);
 		}
 	}
@@ -121,7 +114,7 @@ export class ValueWidget extends Widget {
 		}
 		if (!item) {
 			//TODO error
-			log('error')
+			error('error')
 		} else {
 			const value = parseFloat(item.Value.replace(',', '.'));
 			const parts = this.format.match(/(\d+)(?:([\.,:])(\d+))?(?:(\s*)\$(.+))?/);
