@@ -1,6 +1,5 @@
 import { $, $$, wait } from "../lib/basics.js";
 import { Binding } from "../lib/Binding.js";
-import { Dialog } from "../lib/Dialog.js";
 import { ChartWidget } from "./ChartWidget.js";
 import { PixelService } from "./PixelService.js";
 import { Preferences } from "./Preferences.js";

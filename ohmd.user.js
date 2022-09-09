@@ -1439,7 +1439,6 @@ class TimeWidget extends ValueWidget {
 
 
 
-
 class Dashboard {
 	/**@type{HTMLDivElement}*/ ohmHeader;
 	/**@type{HTMLDivElement}*/ ohmMain;
