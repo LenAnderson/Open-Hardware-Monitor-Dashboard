@@ -2,1319 +2,1695 @@
 // @name         Open Hardware Monitor - Dashboard
 // @banesoace    https://github.com/LenAnderson/
 // @downloadURL  https://github.com/LenAnderson/Open-Hardware-Monitor-Dashboard/raw/master/ohmd.user.js
-// @version      0.6
+// @version      2.0
 // @author       LenAnderson
-// @match        *://*/*
+// @match        http://localhost:8085
 // @grant        GM_registerMenuCommand
 // @grant        GM_unregisterMenuCommand
-// @require      https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
 // ==/UserScript==
+
+
+
 
 (function() {
 	'use strict';
-	
-	if (localStorage.getItem('ohmd-active') && localStorage.getItem('ohmd-active') == location.href) {
-		activate();
-	} else {
-		var cmdActivate = GM_registerMenuCommand('OHM Dashboard - Activate', function() {
-			GM_unregisterMenuCommand(cmdActivate);
-			localStorage.setItem('ohmd-active', location.href);
-			activate();
-		});
-	}
-	
-	function activate() {
-		GM_registerMenuCommand('OHM Dashboard - Deactivate', function() {
-			localStorage.setItem('ohmd-active', 0);
-			location.href = location.href;
-		});
-		var $ = document.querySelector.bind(document);
-var $$ = document.querySelectorAll.bind(document);
-document.$ = document.querySelector;
-document.$$ = document.querySelectorAll;
-Node.prototype.$ = Element.prototype.querySelector;
-Node.prototype.$$ = Element.prototype.querySelectorAll;
 
-HTMLCollection.prototype.forEach = Array.prototype.forEach;
-HTMLCollection.prototype.filter = Array.prototype.filter;
-HTMLCollection.prototype.find = Array.prototype.find;
-NodeList.prototype.forEach = Array.prototype.forEach;
-NodeList.prototype.filter = Array.prototype.filter;
-NodeList.prototype.find = Array.prototype.find;
-
-Node.prototype.addClass = function(cl) { this.classList.add(cl); return this; };
-Node.prototype.delClass = function(cl) { this.classList.remove(cl); return this; };
-Node.prototype.toggleClass = function(cl) { this.classList.toggle(cl); return this; };
-Node.prototype.hasClass = function(cl) { return this.classList.contains(cl); };
-
-Node.prototype._ = Node.prototype.addEventListener;
-
-
-Object.prototype.addListener = function(type, func) {
-	if (!this.listeners) {
-		Object.defineProperty(this, 'listeners', {
-			writable: true,
-			value: {}
-		});
-	}
-	if (!this.listeners[type])
-		this.listeners[type] = [];
-	this.listeners[type].push(func);
-	return func;
-};
-Object.prototype.removeListener = function(type, func) {
-	if (!this.listeners || !this.listeners[type])
-		return;
-	for (var i=0;i<this.listeners[type].length;i++) {
-		if (this.listeners[type][i] != func) continue;
-		this.listeners[type].splice(i,1);
-	}
-};
-Object.prototype.raiseEvent = function(type, evt) {
-	if (!this.listeners || !this.listeners[type])
-		return;
-	this.listeners[type].forEach(function(it) {
-		it(evt);
-	});
-};
-
-
-function get(url) {
-	return new Promise(function(resolve, reject) {
-		var xhr = new XMLHttpRequest();
-		xhr.open('GET', url, true);
-		xhr.addEventListener('load', function() {
-			if (xhr.status == 200) {
-				resolve(xhr.responseText);
-			} else {
-				reject(Error(xhr.statusText));
-			}
-		});
-		xhr.send();
-	});
-}
-		
+// ---------------- IMPORTS  ----------------
 
 
 
+// src\lib\basics.js
+const log = (...msgs)=>console.log.call(console.log, '[OHMD]', ...msgs);
+const error = (...msgs)=>console.error.call(console.error, '[OHMD]', ...msgs);
 
-/****************************************\
-| $MD
-\****************************************/
-var md = {
-	init: function() {
-		this.dialog.init($$('.dialog'));
-		this.menu.init($$('.menu'));
-		this.tabbar.init($$('.tabbar'));
-		this.ripple.init($$('button, input[type="button"], input[type="submit"], .tabbar .item, .menu .item, .toolbar .item'));
-		this.progress.bar.init($$('.progress-bar'));
-		this.input.init($$('.input'));
-	},
-	
-	toasts: {
-		init: function(tstss) {
-			if (tstss instanceof Element) {
-				tstss = [tstss];
-			}
-			tstss.forEach(function(tsts) {
-				tsts.add = function(title, desc) {
-					return this.add(tsts, title, desc);
-				}.bind(this);
-			}.bind(this));
-		},
-		add: function(tsts, title, desc) {
-			var tst = document.createElement('li');
-			tst.addClass('toast');
-			var tstTitle = document.createElement('div');
-			tstTitle.addClass('title');
-			var tstInfo = document.createElement('div');
-			tstInfo.addClass('info');
-			tstTitle.textContent = title;
-			tstInfo.textContent = desc;
-			tst.appendChild(tstTitle);
-			tst.appendChild(tstInfo);
-			
-			tsts.appendChild(tst);
-			tst.style.marginTop = -tst.offsetHeight + 'px';
-			if (tsts.children.length > 0) {
-				tsts.insertBefore(tst, tsts.children[0]);
-			} else {
-				tsts.appendChild(tst);
-			}
-			tst.addClass('preactive');
-			setTimeout(function() { tst.addClass('active'); }.bind(this), 1);
-			setTimeout(function() {
-				tst.delClass('active');
-				setTimeout(function() { tst.remove(); }, 205);
-			}.bind(this), 5000);
-		}
-	},
-	
-	dialog: {
-		init: function(dlgs) {
-			if (dlgs instanceof Element) {
-				dlgs = [dlgs];
-			}
-			dlgs.forEach(function(dlg) {
-				dlg.show = function(src) {
-					return this.show(dlg, src);
-				}.bind(this);
-				dlg.hide = function() {
-					return this.hide(dlg);
-				}.bind(this);
-			}.bind(this));
-		},
-		show: function(dlg, src) {
-			src = src || dlg;
-			return new Promise(function(resolve, reject) {
-				dlg.mdDlgSrc = src;
-				dlg.addClass('preactive');
-				var c = dlg.$('.content');
-				var b = c.getBoundingClientRect();
-				
-				var bb;
-				if (src instanceof MouseEvent) {
-					bb = {top: src.clientY, height: 0, left: src.clientX, width: 0};
-				} else {
-					bb = src.getBoundingClientRect();
-				}
-				
-				var y = Math.round((bb.top + bb.height * 0.5) - (b.top + b.height * 0.5)) + 'px';
-				var x = Math.round((bb.left + bb.width * 0.5) - (b.left + b.width * 0.5)) + 'px';
-				
-				c.style.transform = 'translate('+x+', '+y+') scale(0)';
-				
-				setTimeout(function() { dlg.addClass('active'); }, 20);
-				setTimeout(function() {
-					c.style.transition = 'all 0.4s ease-in-out';
-					
-					resolve(dlg);
-				}, 500);
-			});
-		},
-		hide: function(dlg) {
-			return new Promise(function(resolve, reject) {
-				var src = dlg.mdDlgSrc || dlg;
-				var c = dlg.$('.content');
-				var b = c.getBoundingClientRect();
-				
-				var bb;
-				if (src instanceof MouseEvent) {
-					bb = {top: src.clientY, height: 0, left: src.clientX, width: 0};
-				} else {
-					bb = src.getBoundingClientRect();
-				}
-				
-				var y = Math.round((bb.top + bb.height * 0.5) - (b.top + b.height * 0.5)) + 'px';
-				var x = Math.round((bb.left + bb.width * 0.5) - (b.left + b.width * 0.5)) + 'px';
-				
-				c.style.transform = 'translate('+x+', '+y+') scale(0)';
-				
-				dlg.delClass('active');
-				setTimeout(function() {
-					dlg.delClass('preactive');
-					c.style.transform = '';
-					c.style.transition = '';
-					
-					resolve(dlg);
-				}, 400);
-			});
-		}
-	},
-	
-	menu: {
-		init: function(menus) {
-			if (menus instanceof Element) {
-				menus = [menus];
-			}
-			menus.forEach(function(menu) {
-				menu.show = function() {
-					return this.show(menu);
-				}.bind(this);
-				menu.hide = function() {
-					return this.hide(menu);
-				}.bind(this);
-				menu.addEventListener('click', menu.hide);
-				menu.$('.content').addEventListener('click', function(evt) { evt.stopPropagation(); });
-			}.bind(this));
-		},
-		show: function(menu) {
-			return new Promise(function(resolve, reject) {
-				menu.addClass('preactive');
-				
-				setTimeout(function() {
-					// $('#app').style.transform = 'translateX(' + menu.$('.content').offsetWidth + 'px' + ')';
-					menu.addClass('active');
-				}, 20);
-				setTimeout(function() { resolve(menu); }, 420);
-			});
-		},
-		hide: function(menu) {
-			return new Promise(function(resolve, reject) {
-				// $('#app').style.transform = '';
-				menu.delClass('active');
-				setTimeout(function() {
-					menu.delClass('preactive');
-					resolve(menu);
-				}, 400);
-			});
-		}
-	},
-	
-	tabbar: {
-		init: function(bars) {
-			if (bars instanceof Element) {
-				bars = [bars];
-			}
-			bars.forEach(function(bar) {
-				var items = bar.$$('.item');
-				for (var i=0;i<items.length;i++) {
-					items[i].style.width = Math.floor(100 / items.length * 1000) / 1000 + '%';
-					(function(i){
-						items[i].addEventListener('click', function() {
-							bar.switchTo(items[i]);
-						});
-					})(i);
-				}
-				bar.$('.marker').style.width = Math.floor(100 / items.length * 1000) / 1000 + '%';
-				
-				this.switchTo(bar, bar.$('.active'));
-				
-				bar.switchTo = function(tab) {
-					return this.switchTo(bar, tab);
-				}.bind(this);
-			}.bind(this));
-		},
-		switchTo: function(tabs, tab) {
-			return new Promise(function(resolve, reject) {
-				var items = tabs.$$('.item');
-				for (var i=0;i<items.length;i++) {
-					items[i].delClass('active');
-				}
-				tab.addClass('active');
-				var b = tab.getBoundingClientRect();
-				tabs.$('.marker').style.left = tab.offsetLeft + 'px';
-				var content = tab.getAttribute('data-content');
-				if (content) {
-					content = $('#' + content);
-					content.parentNode.style.transform = 'translateX(' + (content.parentNode.children.lastIndexOf(content)*100) + '%)';
-				}
-				
-				setTimeout(function() { resolve(tabs); }, 400);
-			});
-		}
-	},
-	
-	ripple: {
-		init: function(btns) {
-			if (btns instanceof Element) {
-				btns = [btns];
-			}
-			btns.forEach(function(btn) {
-				btn.ripple = function(evt) {
-					this.ripple(btn, evt);
-				}.bind(this);
-				btn.rippleEl = document.createElement('div');
-				btn.rippleEl.addClass('ripple');
-				btn.appendChild(btn.rippleEl);
-				btn.addEventListener('click', btn.ripple);
-			}.bind(this));
-		},
-		ripple: function(btn, evt) {
-			return new Promise(function(resolve, reject) {
-				btn.rippleEl.style.top = evt.pageY - btn.getBoundingClientRect().top - 250 + 'px';
-				btn.rippleEl.style.left = evt.pageX - btn.getBoundingClientRect().left - 250 + 'px';
-				btn.addClass('clicked'),
-					setTimeout(function() {
-						btn.delClass('clicked');
-						resolve(btn);
-					}, 550);
-			});
-		}
-	},
-	
-	progress: {
-		bar: {
-			init: function(bars) {
-				if (bars instanceof Element) {
-					bars = [bars];
-				}
-				bars.forEach(function(bar) {
-					bar.progress = function(prog) {
-						this.progress(bar, prog);
-					}.bind(this);
-					bar.getProgress = function() {
-						return this.getProgress(bar);
-					}.bind(this);
-				}.bind(this));
-			},
-			progress: function(bar, prog) {
-				bar.$('.inner').style.width = prog + '%';
-			},
-			getProgress: function(bar) {
-				return bar.$('.inner').style.width.replace('%','') * 1;
-			}
-		}
-	},
-	
-	input: {
-		init: function(inps) {
-			if (inps instanceof Node) {
-				inps = [inps];
-			}
-			inps.forEach(function(inp) {
-				inp.input = inp.$('input');
-				var plc = document.createElement('div');
-				plc.addClass('placeholder');
-				plc.textContent = inp.input.placeholder;
-				plc.style.font = window.getComputedStyle(inp.input).font;
-				plc.addEventListener('click', function() { inp.input.focus(); });
-				inp.appendChild(plc);
-				inp.input.placeholder = '';
-				if (inp.input.type.search(/^(range|date)$/) != -1) {
-					inp.addClass('no-placeholder');
-				}
-				
-				inp.input.addEventListener('focus', function() {
-					this.focus(inp);
-				}.bind(this));
-				inp.input.addEventListener('blur', function() {
-					this.blur(inp);
-				}.bind(this));
-				this.focus(inp);
-				this.blur(inp);
-			}.bind(this));
-		},
-		focus: function(inp) {
-			inp.addClass('focus');
-		},
-		blur: function(inp) {
-			if (inp.input.value.trim() != '' || inp.input.validity.badInput) {
-				inp.addClass('has-content');
-			} else {
-				inp.delClass('has-content');
-			}
-			inp.delClass('focus');
-		}
+const $ = (root,query)=>(query?root:document).querySelector(query?query:root);
+const $$ = (root,query)=>Array.from((query?root:document).querySelectorAll(query?query:root));
+
+const wait = async(millis)=>(new Promise(resolve=>setTimeout(resolve,millis)));
+
+
+// src\lib\BindingTarget.js
+class BindingTarget {
+	/**@type {HTMLElement}*/ target;
+	/**@type {String}*/ attributeName;
+	/**@type {Function}*/ targetConverter;
+	/**@type {Function}*/ sourceConverter;
+	constructor(
+		/**@type {HTMLElement}*/ target,
+		/**@type {String}*/ attributeName,
+		/**@type {Function}*/ targetConverter,
+		/**@type {Function}*/ sourceConverter
+	) {
+		this.target = target;
+		this.attributeName = attributeName;
+		this.targetConverter = targetConverter;
+		this.sourceConverter = sourceConverter;
 	}
 }
-		var Config = {
-	widgets: [],
-	grid: false,
-	gridSize: 10,
-	showGrid: false,
-	gridColor: 'rgba(0,0,0,0.75)',
-	
-	save: function() {
-		localStorage.setItem('ohmd-config', JSON.stringify(this));
-	},
-	load: function() {
-		var config;
-		try {
-			config = JSON.parse(localStorage.getItem('ohmd-config'));
-		} catch (ex) {}
-		if (config) {
-			if (config.widgets && config.widgets instanceof Array) {
-				this.widgets = config.widgets;
-			}
-			if (config.grid && typeof config.grid == 'boolean') {
-				this.grid = config.grid;
-			}
-			if (config.gridSize && typeof config.gridSize == 'number') {
-				this.gridSize = parseInt(config.gridSize);
-			}
-			if (config.showGrid && typeof config.showGrid == 'boolean') {
-				this.showGrid = config.showGrid;
-			}
-			if (config.gridColor) {
-				this.gridColor = config.gridColor;
-			}
+
+
+// src\lib\Binding.js
+
+
+class Binding {
+	/**@type {Binding[]}*/ static bindings = [];
+	/**@type {Object}*/ source;
+	/**@type {String}*/ propertyName;
+	/**@type {BindingTarget[]}*/ targets = [];
+	/**@type {Function}*/ theGetter;
+	/**@type {Function}*/ theSetter;
+	/**@type {Boolean}*/ isProperty = false;
+	value;
+	static create(source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
+		let binding = this.bindings.find(it=>it.source==source&&it.propertyName==propertyName);
+		if (!binding) {
+			binding = new Binding(source, propertyName);
+			this.bindings.push(binding);
 		}
-	}
-}
-		var Data = (function() {
-	//
-	// vars
-	//
-	var module = {};
-	
-	
-	//
-	// methods
-	//
-	
-	// constructor
-	function Data() {
-		getData();
-	}
-	
-	function getData() {
-		get('data.json').then(JSON.parse).then(gotData.bind(this));
-	}
-	function gotData(data) {
-		module.raiseEvent('update', data);
-		setTimeout(getData.bind(this), 1000);
-	}
-	
-	
-	
-	Data();
-	return module;
-});
-		var Widget = (function(arg_config) {
-	//
-	// properties
-	//
-	var id;
-	var history;
-	var chart;
-	var data;
-	var context;
-	var element;
-	var dragging = false;
-	var dragOffset = {left:0, top:0};
-	var resizing = false;
-	var resizeOrigin;
-	var config;
-	var unit;
-	
-	
-	//
-	// methods
-	//
-	
-	// constructor
-	function Widget(newConfig) {
-		config = newConfig;
-		id = config.id;
-		
-		element = document.createElement('div');
-		element.innerHTML = '<div><div class=\"header\"><div class=\"title\"></div><ul class=\"actions\"><li class=\"config\" title=\"Configure Widget\"></li><li class=\"close\" title=\"Remove Widget\"></li></ul></div><div class=\"content\"></div></div>';
-		element.addClass('widget');
-		setTitle(config.title);
-		setPosition(config.position);
-		
-		$('#widgets').appendChild(element);
-		
-		
-		element.addEventListener('click', toTop);
-		element.$('.header').addEventListener('mousedown', dragStart);
-		addEventListener('mousemove', mouseMove);
-		addEventListener('mouseup', mouseUp);
-		
-		element.$('.close').addEventListener('click', remove);
-		element.$('.config').addEventListener('click', configure);
-		
-		if (config.type == 'graph') {
-			WidgetGraph();
-		} else if (config.type == 'value') {
-			WidgetValue();
-		}
-		toTop();
-	};
-	function WidgetGraph() {
-		element.$('.content').innerHTML = '<div class=\"canvas\"><canvas width=\"400\" height=\"300\"></canvas></div><div class=\"resizer\"></div>';
-		setSize(config.size);
-		
-		context = element.$('canvas').getContext('2d');
-		chart = new Chart(context, {
-			type: 'line',
-			data: {
-				labels: [],
-				datasets: [{
-					fill: true,
-					pointRadius: 0,
-					data: []
-				}]
-			},
-			options: {
-				animation: false,
-				legend: false,
-				maintainAspectRatio: false,
-				scales: {
-					yAxes: [{
-						ticks: {
-							suggestedMin: 0
-						},
-						gridLines: {
-							color: 'rgba(50,50,50,0.5)'
+		binding.targets.push(new BindingTarget(target, attributeName, targetConverter, sourceConverter));
+		binding.setTargetValue();
+		switch (target.tagName) {
+			case 'TEXTAREA':
+			case 'INPUT': {
+				switch (attributeName) {
+					case 'value':
+					case 'checked': {
+						switch (target.type) {
+							case 'radio': {
+								target.addEventListener('change', ()=>target.checked?binding.setter(target.value):false);
+								break;
+							}
+							default: {
+								target.addEventListener('change', ()=>binding.setter(sourceConverter(target[attributeName])));
+								break;
+							}
 						}
-					}],
-					xAxes: [{
-						gridLines: {
-							color: 'rgba(50,50,50,0.5)'
-						}
-					}]
-				},
-			}
-		});
-		data = chart.data.datasets[0].data;
-		element.chart = chart;
-		setHistory(config.graph.history);
-		setFillColor(config.graph.fillColor, config.graph.fillColorOpacity);
-		setLineColor(config.graph.lineColor, config.graph.lineColorOpacity);
-		setMax(config.graph.max);
-		
-		element.$('.resizer').addEventListener('mousedown', resizeStart);
-	}
-	function WidgetValue() {
-		element.$('.content').innerHTML = '<div class=\"value\"><span class=\"leading\"></span><span class=\"current\"></span></div>';
-		data = [];
-		setColor(config.value.color, config.value.colorOpacity);
-		setFontSize(config.value.fontSize);
-		setFormat(config.value.format);
-		
-	}
-	
-	// drag 'n' drop
-	function toTop() {
-		var top = $('.widget.top')
-		if (top) {
-			top.delClass('top');
-		}
-		element.addClass('top');
-	}
-	function dragStart(evt) {
-		toTop();
-		if (!dragging) {
-			evt.preventDefault();
-			dragging = true;
-			element.classList.add('hovered');
-			var style = getComputedStyle(element);
-			dragOffset = {
-				left: parseInt(style.getPropertyValue("left"),10) - evt.clientX,
-				top: parseInt(style.getPropertyValue("top"),10) - evt.clientY
-			};
-		}
-	}
-	function resizeStart(evt) {
-		toTop();
-		if (!resizing) {
-			evt.preventDefault();
-			resizing = true;
-			element.classList.add('hovered');
-			var rect = element.getBoundingClientRect();
-			resizeOrigin = {
-				left: rect.right,
-				top: rect.bottom,
-				height: rect.height,
-				width: rect.width
-			};
-		}
-	}
-	function mouseMove(evt) {
-		if (dragging) {
-			evt.preventDefault();
-			setPosition({
-				left: evt.clientX + dragOffset.left,
-				top: evt.clientY + dragOffset.top
-			});
-		} else if (resizing) {
-			evt.preventDefault();
-			setSize({
-				height: resizeOrigin.height + evt.clientY - resizeOrigin.top,
-				width: resizeOrigin.width + evt.clientX - resizeOrigin.left
-			});
-		}
-	}
-	function mouseUp(evt) {
-		if (dragging) {
-			evt.preventDefault();
-			dragging = false;
-			element.classList.remove('hovered');
-			dragOffset = undefined;
-		} else if (resizing) {
-			evt.preventDefault();
-			resizing = false;
-			element.classList.remove('hovered');
-			resizeOrigin = undefined;
-		}
-	}
-	
-	function raiseEvent(type, args) {
-		if (module) {
-			module.raiseEvent(type, args);
-		}
-	}
-	function raiseConfigEvent() {
-		raiseEvent('config', {widget:module, config:config});
-	}
-	
-	function getConfig() {
-		return config;
-	}
-	
-	function setHistory(ticks) {
-		config.graph.history = ticks;
-		raiseConfigEvent();
-		history = ticks;
-		updateChart();
-	}
-	function setMax(max) {
-		config.graph.max = max;
-		raiseConfigEvent();
-		chart.options.scales.yAxes[0].ticks.suggestedMax = max;
-	}
-	function setAutoMax(max) {
-		chart.options.scales.yAxes[0].ticks.suggestedMax = max;
-	}
-	
-	function setLineColor(color, opacity) {
-		if (color[0] == '#') {
-			var parts = color.substring(1).match(/.{2}/g);
-			color = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
-		}
-		config.graph.lineColor = color;
-		raiseConfigEvent();
-		chart.data.datasets[0].borderColor = color;
-		updateChart();
-	}
-	function setFillColor(color, opacity) {
-		if (color[0] == '#') {
-			var parts = color.substring(1).match(/.{2}/g);
-			color = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
-		}
-		config.graph.fillColor = color;
-		raiseConfigEvent();
-		chart.data.datasets[0].backgroundColor = color;
-		updateChart();
-	}
-	
-	function setColor(color, opacity) {
-		if (color[0] == '#') {
-			var parts = color.substring(1).match(/.{2}/g);
-			color = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
-		}
-		config.value.color = color;
-		raiseConfigEvent();
-		element.$('.value').style.color = color;
-	}
-	function setFontSize(size) {
-		config.value.fontSize = size;
-		raiseConfigEvent();
-		element.$('.value').style.fontSize = size + 'px';
-	}
-	function setFormat(format) {
-		config.value.format = format;
-		raiseConfigEvent();
-	}
-	
-	function setTitle(title) {
-		config.title = title;
-		raiseConfigEvent();
-		element.$('.title').textContent = title;
-	}
-
-	function setSensor(newId, sensor) {
-		config.id = newId;
-		id = newId;
-		config.sensor = sensor;
-		raiseConfigEvent();
-	}
-	
-	function setData(newData) {
-		var sensor = newData;
-		if (id == 'Time') {
-			var now = new Date();
-			sensor = {Value: now.getHours()+','+now.getMinutes().toString().padStart(2,'0')};
-		}
-		else {
-			id.forEach(function(part) {
-				if (sensor) {
-					sensor = sensor.Children.find(function(it) { return it.Text == part; });
-				}
-			});
-		}
-		if (sensor) {
-			data.push(parseFloat(sensor.Value.replace(',', '.')));
-			setUnit(sensor.Value.replace(/^\d+([,\.]\d+)?\s*(.*)$/, '$2'));
-			if (config.type == 'graph') {
-				if (config.graph.max == 0) {
-					if (sensor.Value.search(/%$/) != -1) {
-						setAutoMax(100);
-					} else {
-						setAutoMax(undefined);
+						break;
 					}
 				}
-				updateChart();
-			} else if (config.type == 'value') {
-				updateValue();
+				break;
 			}
 		}
 	}
-	
-	// function setMax(max) {
-		// chart.options.scales.yAxes[0].ticks.suggestedMax = max;
-	// }
-	function setUnit(newUnit) {
-		unit = newUnit;
-	}
-	
-	function setSize(size) {
-		config.size = size;
-		raiseConfigEvent();
-		element.style.width = (Config.grid?Math.round(size.width/Config.gridSize)*Config.gridSize : size.width) + 'px';
-		element.style.height = (Config.grid?Math.round(size.height/Config.gridSize)*Config.gridSize : size.height) + 'px';
-	}
-	function setPosition(position) {
-		config.position = position;
-		raiseConfigEvent();
-		element.style.left = (Config.grid?Math.round(position.left/Config.gridSize)*Config.gridSize : position.left) + 'px';
-		element.style.top = (Config.grid?Math.round(position.top/Config.gridSize)*Config.gridSize : position.top) + 'px';
-	}
-	
-	function updateValue() {
-		while (data.length > 1)
-			data.shift();
-		var parts = config.value.format.match(/(\d+)(?:([\.,:])(\d+))?/);
-		if (parts[2] == undefined) parts[2] = '';
-		if (parts[3] == undefined) parts[3] = '';
-		var value = '';
-		var leading = '';
-		if (parts[1].length > 0 && parseInt(data[0]).toString().length < parts[1].length) {
-			leading = "0".repeat(parts[1].length-parseInt(data[0]).toString().length);
-		}
-		value += parseInt(data[0]);
-		if (parts[2].length > 0) {
-			value += parts[2];
-		}
-		if (parts[3].length > 0) {
-			value += data[0].toFixed(parts[3].length).slice(-parts[3].length);
-		}
-		element.$('.value > .current').textContent = config.value.format.replace(/(\d+)(?:([\.,:])(\d+))?/, value).replace(/\$unit/, unit);
-		element.$('.value > .leading').textContent = leading;
-	}
-	function updateChart() {
-		var labels = [];
-		var skip = Math.round(history / 15);
-		for (var i=-history;i<1;i++) {
-			if (i%skip == 0)
-				labels.push(i);
-			else
-				labels.push('');
-		}
-		chart.data.labels = labels;
-		while (data.length < history + 1) {
-			data.unshift(null);
-		}
-		while (data.length > history + 1) {
-			data.shift();
-		}
-		chart.update();
-	}
-	
-	function remove() {
-		element.remove();
-		raiseEvent('remove', module);
-	}
-	
-	function configure(evt) {
-		evt.preventDefault();
-		evt.stopPropagation();
-		raiseEvent('showConfig', {evt:evt, widget:module});
-	}
-	
-	
-	Widget(arg_config);
-	var module;
-	return module={
-		setData: setData,
-		setSensor: setSensor,
-		setTitle: setTitle,
-		setHistory: setHistory,
-		setMax: setMax,
-		setLineColor: setLineColor,
-		setFillColor: setFillColor,
-		setFontSize: setFontSize,
-		setColor: setColor,
-		setFormat: setFormat,
-		getConfig: getConfig
-	};
-});
-		var WidgetDlg = (function() {
-	//
-	// nodes
-	//
-	var _sensor;
-	var _title;
-	var _type = {
-		graph: undefined,
-		value: undefined
-	};
-	var _graph = {
-		lineColor: undefined,
-		lineColorPicker: undefined,
-		lineColorOpacity: undefined,
-		fillColor: undefined,
-		fillColorPicker: undefined,
-		fillColorOpacity: undefined,
-		history: undefined,
-		max: undefined
-	};
-	var _value = {
-		fontSize: undefined,
-		color: undefined,
-		colorPicker: undefined,
-		colorOpacity: undefined,
-		format: undefined
-	}
-	
-	
-	//
-	// vars
-	//
-	var promise;
-	var element;
-	var dlg;
-	var sensors;
-	var defaultConfig = {
-		sensor: '',
-		title: 'New Widget',
-		type: 'graph',
-		graph: {
-			lineColor: 'rgba(115, 115, 90, 0.25)',
-			fillColor: 'rgba(115, 115, 90, 0.25)',
-			history: 60,
-			max: 0
-		},
-		value: {
-			color: 'rgba(115,115,90,0.5)',
-			fontSize: 32,
-			format: '0.0 $unit'
-		}
-	};
-	var widget;
-	var isOld = false;
-	
-	
-	//
-	// methods
-	//
-	
-	// constructor
-	function WidgetDlg() {
-		element = document.createElement('div');
-		element.innerHTML = '<div class=\"dialog\" id=\"dlg-widget\"><div class=\"height\"></div><div class=\"content\"><div class=\"title\">Configure Widget</div><div><select id=\"dlg-widget-sensor\"><option value=\"\">Select a Sensor</option></select></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-widget-title\" class=\"long\" placeholder=\"Title\"></div></div><div><label for=\"dlg-widget-type-graph\"><input type=\"radio\" id=\"dlg-widget-type-graph\" name=\"dlg-widget-type\"> Graph</label><label for=\"dlg-widget-type-value\"><input type=\"radio\" id=\"dlg-widget-type-value\" name=\"dlg-widget-type\"> Value</label></div><div id=\"dlg-widget-graph\"><div><div class=\"input\"><input type=\"text\" id=\"dlg-widget-graph-lineColor\" placeholder=\"Line Color\" value=\"#cfcfcf\"><input type=\"color\" id=\"dlg-widget-graph-lineColor-picker\" value=\"#cfcfcf\"></div><div class=\"input\"><input type=\"number\" min=\"0\" max=\"100\" id=\"dlg-widget-graph-lineColor-opacity\" placeholder=\"Opacity\" value=\"50\"></div></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-widget-graph-fillColor\" placeholder=\"Fill Color\" value=\"#e6e6e6\"><input type=\"color\" id=\"dlg-widget-graph-fillColor-picker\" value=\"#e6e6e6\"></div><div class=\"input\"><input type=\"number\" min=\"0\" max=\"100\" id=\"dlg-widget-graph-fillColor-opacity\" placeholder=\"Opacity\" value=\"50\"></div></div><div><div class=\"input\"><input type=\"number\" id=\"dlg-widget-graph-history\" placeholder=\"History [s]\" value=\"15\"></div></div><div><div class=\"input\"><input type=\"number\" id=\"dlg-widget-graph-max\" placeholder=\"Max. Value (0=auto)\" value=\"0\" step=\"0.1\"></div></div></div><div id=\"dlg-widget-value\" class=\"hidden\"><div><div class=\"input\"><input type=\"number\" id=\"dlg-widget-value-fontSize\" placeholder=\"Font Size\" value=\"32\"></div></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-widget-value-color\" placeholder=\"Color\" value=\"#000000\"><input type=\"color\" id=\"dlg-widget-value-color-picker\" value=\"#000000\"></div><div class=\"input\"><input type=\"number\" min=\"0\" max=\"100\" id=\"dlg-widget-value-color-opacity\" placeholder=\"Opacity\" value=\"50\"></div></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-widget-value-format\" placeholder=\"Number Format\" value=\"0.0 $unit\"></div></div></div><div class=\"actions\"><button id=\"dlg-widget-ok\">OK</button><button id=\"dlg-widget-cancel\">Cancel</button></div></div></div>';
-		$('#app').appendChild(element);
-		dlg = element.children[0];
+	constructor(source, propertyName) {
+		this.source = source;
+		this.propertyName = propertyName;
 		
-		_sensor = dlg.$('#dlg-widget-sensor');
-		_title = dlg.$('#dlg-widget-title');
-		_type.graph = dlg.$('#dlg-widget-type-graph');
-		_type.value = dlg.$('#dlg-widget-type-value');
-		_graph = dlg.$('#dlg-widget-graph');
-		_graph.lineColor = dlg.$('#dlg-widget-graph-lineColor');
-		_graph.lineColorPicker = dlg.$('#dlg-widget-graph-lineColor-picker');
-		_graph.lineColorOpacity = dlg.$('#dlg-widget-graph-lineColor-opacity');
-		_graph.fillColor = dlg.$('#dlg-widget-graph-fillColor');
-		_graph.fillColorPicker = dlg.$('#dlg-widget-graph-fillColor-picker');
-		_graph.fillColorOpacity = dlg.$('#dlg-widget-graph-fillColor-opacity');
-		_graph.history = dlg.$('#dlg-widget-graph-history');
-		_graph.max = dlg.$('#dlg-widget-graph-max');
-		_value = dlg.$('#dlg-widget-value');
-		_value.fontSize = dlg.$('#dlg-widget-value-fontSize');
-		_value.color = dlg.$('#dlg-widget-value-color');
-		_value.colorPicker = dlg.$('#dlg-widget-value-color-picker');
-		_value.colorOpacity = dlg.$('#dlg-widget-value-color-opacity');
-		_value.format = dlg.$('#dlg-widget-value-format');
-		
-		dlg.$('#dlg-widget-cancel').addEventListener('click', function() {
-			dlg.hide();
-		});
-		dlg.$('#dlg-widget-ok').addEventListener('click', ok);
-		
-		_graph.fillColor.addEventListener('change', function() {
-			_graph.fillColorPicker.value = this.value;
-		});
-		_graph.fillColorPicker.addEventListener('change', function() {
-			_graph.fillColor.value = this.value;
-		});
-		_graph.lineColor.addEventListener('change', function() {
-			_graph.lineColorPicker.value = this.value;
-		});
-		_graph.lineColorPicker.addEventListener('change', function() {
-			_graph.lineColor.value = this.value;
-		});
-		_sensor.addEventListener('change', function() {
-			if (!isOld) {
-				dlg.$('#dlg-widget-title').value = _sensor.$(':checked').dataId.join(' - ');
-			}
-			if (_sensor.value == 'Time') {
-				_type.value.click();
-				_value.format.value = '0:00';
-			}
-			dlg.$('#dlg-widget-title').focus();
-			dlg.$('#dlg-widget-title').blur();
-		});
-		_type.graph.addEventListener('click', function() {
-			_graph.delClass('hidden');
-			_value.addClass('hidden');
-		});
-		_type.value.addEventListener('click', function() {
-			_value.delClass('hidden');
-			_graph.addClass('hidden');
-		});
-		_value.color.addEventListener('change', function() {
-			_value.colorPicker.value = _value.color.value;
-		});
-		_value.colorPicker.addEventListener('change', function() {
-			_value.color.value = _value.colorPicker.value;
-		});
-	}
-	
-	function show(evt, theWidget) {
-		_sensor.delClass('error');
-		widget = theWidget
-		var config = widget ? widget.getConfig() : defaultConfig;
-		_sensor.value = config.sensor;
-		_title.value = config.title;
-		if (config.type == 'graph') {
-			_graph.delClass('hidden');
-			_value.addClass('hidden');
-			_type.graph.checked = true;
-		} else if (config.type == 'value') {
-			_value.delClass('hidden');
-			_graph.addClass('hidden');
-			_type.value.checked = true;
-		}
-		if (config.type == 'graph' || !theWidget) {
-			var lineColorParts = config.graph.lineColor.match(/[0-9\.]+/g);
-			var fillColorParts = config.graph.fillColor.match(/[0-9\.]+/g);
-			_graph.lineColor.value = '#' + ("00"+parseInt(lineColorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(lineColorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(lineColorParts[2]).toString(16)).slice(-2);
-			_graph.lineColorPicker.value = '#' + ("00"+parseInt(lineColorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(lineColorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(lineColorParts[2]).toString(16)).slice(-2);
-			_graph.lineColorOpacity.value = parseFloat(lineColorParts[3])*100;
-			_graph.fillColor.value = '#' + ("00"+parseInt(fillColorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(fillColorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(fillColorParts[2]).toString(16)).slice(-2);
-			_graph.fillColorPicker.value = '#' + ("00"+parseInt(fillColorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(fillColorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(fillColorParts[2]).toString(16)).slice(-2);
-			_graph.fillColorOpacity.value = parseFloat(fillColorParts[3])*100;
-			_graph.history.value = config.graph.history;
-			_graph.max.value = config.graph.max;
-		} if (config.type == 'value' || !theWidget) {
-			var colorParts = config.value.color.match(/[0-9\.]+/g);
-			_value.fontSize.value = config.value.fontSize;
-			_value.color.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
-			_value.colorPicker.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
-			_value.colorOpacity.value = parseFloat(colorParts[3])*100;
-			_value.format.value = config.value.format;
-		}
-		if (theWidget) {
-			// _sensor.disabled = true;
-			_type.graph.disabled = true;
-			_type.value.disabled = true;
-			isOld = true;
+		this.value = this.source[this.propertyName];
+		const p = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(source), propertyName);
+		if (p) {
+			this.isProperty = true;
+			this.theGetter = p.get.bind(source);
+			this.theSetter = p.set.bind(source);
 		} else {
-			_sensor.disabled = false;
-			_type.graph.disabled = false;
-			_type.value.disabled = false;
+			this.theGetter = ()=>this.value;
+			this.theSetter = (value)=>this.value=value;
 		}
-		
-		dlg.show(evt);
-		_title.focus();
-		_title.blur();
+		Object.defineProperty(source, propertyName, {
+			get: this.getter.bind(this),
+			set: this.setter.bind(this)
+		});
+		this.setTargetValue();
 	}
-	
-	function ok() {
-		if (widget) {
-			if (_sensor.value == '') {
-				_sensor.addClass('error');
-				dlg.$('.content').addClass('shake');
-				setTimeout(function() { dlg.$('.content').delClass('shake'); }, 900);
-				return;
-			}
-			widget.setSensor(_sensor.$(':checked').dataId, _sensor.value);
-			widget.setTitle(_title.value.trim());
-			if (widget.getConfig().type == 'graph') {
-				widget.setHistory(parseInt(_graph.history.value));
-				widget.setLineColor(_graph.lineColor.value, _graph.lineColorOpacity.value);
-				widget.setFillColor(_graph.fillColor.value, _graph.fillColorOpacity.value);
-				widget.setMax(parseFloat(_graph.max.value));
-			} else if (widget.getConfig().type == 'value') {
-				widget.setFontSize(parseInt(_value.fontSize.value));
-				widget.setColor(_value.color.value, _value.colorOpacity.value);
-				widget.setFormat(_value.format.value);
-			}
+	getter() {
+		return this.theGetter();
+	}
+	setter(value) {
+		let changed = false;
+		if (this.isProperty) {
+			this.theSetter(value);
+			changed = this.getValueOf(this.value) != this.getValueOf(this.theGetter())
 		} else {
-			if (_sensor.value == '') {
-				_sensor.addClass('error');
-				dlg.$('.content').addClass('shake');
-				setTimeout(function() { dlg.$('.content').delClass('shake'); }, 900);
-				return;
+			changed = this.theGetter() != value;
+		}
+		if (changed) {
+			this.value = this.isProperty ? this.theGetter() : value;
+			this.setTargetValue();
+		}
+	}
+	getValueOf(it) {
+		if (it !== null && it !== undefined && it.valueOf) {
+			return it.valueOf();
+		}
+		return it;
+	}
+	setTargetValue() {
+		this.targets.forEach(target=>{
+			if (target.attributeName.substring(0,5) == 'data-') {
+				target.target.setAttribute(target.attributeName, target.targetConverter(this.theGetter()));
+			} else {
+				target.target[target.attributeName] = target.targetConverter(this.theGetter());
 			}
-			module.raiseEvent('add', {
-				id: _sensor.$(':checked').dataId,
-				sensor: _sensor.value,
-				title: _title.value.trim(),
-				type: _type.graph.checked?'graph': _type.value.checked?'value':'',
-				graph: {
-					lineColor: _graph.lineColor.value,
-					lineColorOpacity: _graph.lineColorOpacity.value,
-					fillColor: _graph.fillColor.value,
-					fillColorOpacity: _graph.fillColorOpacity.value,
-					history: parseInt(_graph.history.value),
-					max: parseFloat(_graph.max.value)
-				},
-				value: {
-					fontSize: parseInt(_value.fontSize.value),
-					color: _value.color.value,
-					colorOpacity: _value.colorOpacity.value,
-					format: _value.format.value
-				},
-				size: {
-					height: 300,
-					width: 400
-				},
-				position: {
-					left: 10,
-					top: 10
+		});
+	}
+}
+
+
+// src\lib\Dialog.js
+
+
+
+class Dialog {
+	/**@type{HTMLDivElement}*/ blocker;
+	/**@type{HTMLDivElement}*/ content;
+	/**@type{HTMLDivElement}*/ header;
+	/**@type{HTMLDivElement}*/ body;
+	/**@type{HTMLDivElement}*/ footer;
+
+	/**@type{String}*/ title;
+	/**@type{String}*/ affirmative = 'OK';
+	/**@type{String}*/ negative = null;
+
+	/**@type{HTMLElement}*/ trigger;
+
+	/**@type{Promise}*/ outcome;
+	/**@type{Function}*/ outcomeResolver;
+
+
+
+
+	constructor(/**@type{String}*/title, /**@type{String}*/affirmative='OK', /**@type{String}*/negative=null) {
+		this.buildDom();
+
+		this.title = title;
+		this.affirmative = affirmative;
+		this.negative = negative;
+	}
+
+	buildDom() {
+		const blocker = document.createElement('div'); {
+			this.blocker = blocker;
+			blocker.classList.add('ohmd--dialog--blocker');
+			const content = document.createElement('div'); {
+				this.content = content;
+				content.classList.add('ohmd--dialog--content');
+				const header = document.createElement('div'); {
+					this.header = header;
+					header.classList.add('ohmd--dialog--header');
+					Binding.create(this, 'title', header, 'textContent');
+					content.append(header);
 				}
-			});
-		}
-		dlg.hide();
-	}
-	
-	function updateSensors(data) {
-		var timeOpt = document.createElement('option'); {
-			timeOpt.textContent = 'Time';
-			timeOpt.dataId = ['Time'];
-			timeOpt.value = 'Time';
-		}
-		
-		var offset = [];
-		var struct = [timeOpt].concat(getChildStructure(data));
-		setSensors(struct);
-		function getChildStructure(sensor) {
-			var opt = document.createElement('option');
-			opt.textContent = '-'.repeat(offset.length) + sensor.Text;
-			var opts = [opt];
-			opt.dataId = offset.concat(sensor.Text).slice(1);
-			opt.value = opt.dataId.join('---');
-			offset.push(sensor.Text);
-			sensor.Children.forEach(function(child) {
-				opts = opts.concat(getChildStructure(child));
-			});
-			offset.pop();
-			if (sensor.Children.length > 0) {
-				opt.disabled = true;
+				const body = document.createElement('div'); {
+					this.body = body;
+					body.classList.add('ohmd--dialog--body');
+					content.append(body);
+				}
+				const footer = document.createElement('div'); {
+					this.footer = footer;
+					footer.classList.add('ohmd--dialog--footer');
+					const affBtn = document.createElement('button'); {
+						affBtn.classList.add('ohmd--dialog--button--affirmative');
+						Binding.create(this, 'affirmative', affBtn, 'textContent');
+						affBtn.addEventListener('click', ()=>this.hide(true));
+						footer.append(affBtn);
+					}
+					const negBtn = document.createElement('button'); {
+						negBtn.classList.add('ohmd--dialog--button--negative');
+						Binding.create(this, 'negative', negBtn, 'textContent');
+						Binding.create(this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
+						negBtn.addEventListener('click', ()=>this.hide(false));
+						footer.append(negBtn);
+					}
+					content.append(footer);
+				}
+				blocker.append(content);
 			}
-			return opts;
+			document.body.append(blocker);
 		}
 	}
-	function setSensors(opts) {
-		var newSensors = opts.map(function(opt) { return opt.textContent; }).join('\n');
-		if (newSensors != sensors) {
-			sensors = newSensors;
-			while (_sensor.children.length > 1)
-				_sensor.children[1].remove();
-			opts.forEach(function(it) {
-				_sensor.appendChild(it);
-			});
-		}
+
+
+
+
+	async show(/**@type{HTMLElement}*/trigger) {
+		this.outcome = new Promise(resolve=>this.outcomeResolver=resolve);
+		this.trigger = trigger;
+		this.blocker.classList.add('ohmd--dialog--preactive');
+
+		const rect = this.content.getBoundingClientRect();
+		const triggerRect = trigger.getBoundingClientRect();
+		const x = `${Math.round((triggerRect.left + triggerRect.width * 0.5) - (rect.left + rect.width * 0.5))}px`;
+		const y = `${Math.round((triggerRect.top + triggerRect.height * 0.5) - (rect.top + rect.height * 0.5))}px`;
+		this.content.style.transform = `translate(${x}, ${y}) scale(0)`;
+		await wait(20);
+
+		this.blocker.classList.add('ohmd--dialog--active');
+		await wait(410);
+		this.content.style.transition = 'all 400ms ease-in-out';
 	}
-	
-	
-	
-	WidgetDlg();
-	var module;
-	return module={
-		show: show,
-		updateSensors: updateSensors
-	};
-});
-		var SettingsDlg = (function() {
-	//
-	// nodes
-	//
-	var _grid;
-	var _gridSize;
-	var _gridColor;
-	var _gridColorPicker;
-	var _gridColorOpacity;
-	var _gridShow;
-	
-	//
-	// vars
-	//
-	var element;
-	var dlg;
-	
-	
-	//
-	// methods
-	//
-	
-	// constructor
-	function SettingsDlg() {
-		element = document.createElement('div');
-		element.innerHTML = '<div class=\"dialog\" id=\"dlg-settings\"><div class=\"height\"></div><div class=\"content\"><div class=\"title\">Settings</div><div><div><label for=\"dlg-settings-grid\"><input type=\"checkbox\" id=\"dlg-settings-grid\" placeholder=\"Snap to Grid\" checked> Snap to Grid</label></div></div><div><div class=\"input\"><input type=\"number\" id=\"dlg-settings-gridSize\" placeholder=\"Grid Size\" value=\"10\"></div></div><div><div><label for=\"dlg-settings-gridShow\"><input type=\"checkbox\" id=\"dlg-settings-gridShow\" placeholder=\"Show Grid\" checked> Show Grid</label></div></div><div><div class=\"input\"><input type=\"text\" id=\"dlg-settings-gridColor\" placeholder=\"Grid Color\" value=\"#000000\"><input type=\"color\" id=\"dlg-settings-gridColor-picker\" value=\"#000000\"></div><div class=\"input\"><input type=\"number\" min=\"0\" max=\"100\" id=\"dlg-settings-gridColor-opacity\" placeholder=\"Opacity\" value=\"50\"></div></div><div class=\"actions\"><button id=\"dlg-settings-ok\">OK</button><button id=\"dlg-settings-cancel\">Cancel</button></div></div></div>';
-		$('#app').appendChild(element);
-		dlg = element.children[0];
-		
-		_grid = dlg.$('#dlg-settings-grid');
-		_gridSize = dlg.$('#dlg-settings-gridSize');
-		_gridColor = dlg.$('#dlg-settings-gridColor');
-		_gridColorPicker = dlg.$('#dlg-settings-gridColor-picker');
-		_gridColorOpacity = dlg.$('#dlg-settings-gridColor-opacity');
-		_gridShow = dlg.$('#dlg-settings-gridShow');
-		
-		dlg.$('#dlg-settings-ok').addEventListener('click', ok);
-		dlg.$('#dlg-settings-cancel').addEventListener('click', function() {
-			dlg.hide();
-		});
-		
-		_gridColor.addEventListener('change', function() {
-			_gridColorPicker.value = this.value;
-		});
-		_gridColorPicker.addEventListener('change', function() {
-			_gridColor.value = this.value;
-		});
-	}
-	
-	function show(evt) {
-		var colorParts = Config.gridColor.match(/[0-9\.]+/g);
-		_grid.checked = Config.grid;
-		_gridSize.value = Config.gridSize;
-		_gridColor.value = '#' + ("00"+parseInt(colorParts[0]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[1]).toString(16)).slice(-2) + ("00"+parseInt(colorParts[2]).toString(16)).slice(-2);
-		_gridColorPicker.value = _gridColor.value;
-		_gridColorOpacity.value = parseFloat(colorParts[3])*100;
-		_gridShow.checked = Config.showGrid;
-		dlg.show(evt);
-	}
-	
-	function ok() {
-		var parts = _gridColor.value.substring(1).match(/.{2}/g);
-		var opacity = _gridColorOpacity.value;
-		var gridColor = 'rgba(' + parseInt(parts[0],16) + ',' + parseInt(parts[1],16) + ',' + parseInt(parts[2],16) + ',' + (opacity/100) + ')';
-		module.raiseEvent('change', {
-			grid: _grid.checked,
-			gridSize: parseInt(_gridSize.value),
-			gridColor: gridColor,
-			showGrid: _gridShow.checked
-		});
-		dlg.hide();
-	}
-	
-	
-	
-	SettingsDlg();
-	var module;
-	return module = {
-		show: show
-	};
-});
-		var OHMDashboard = (function() {
-	//
-	// properties
-	//
-	
-	var _data = new Data();
-	var _widgets = [];
-	var sensors;
-	var widgetDlg;
-	var settingsDlg;
-	
-	
-	//
-	// methods
-	//
-	
-	// constructor
-	function OHMDashboard() {
-		document.body.parentNode.innerHTML = '<head><title>OHM Dashboard</title><link rel=\"shortcut icon\" type=\"image/png\" href=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURRIRDRMSExQUFBUVFRcXFxoZER8dER8dExgYGBkZGRkYGhoaGhsbGxscHR8eGxwcHB0dHR0dHh4eHR0eHh4fIiIfFyMiHCgmGiwpHS0rHy4sHjw3GTw3GiIjJCYlISQkJCUkJSYmJicnKCgnIignJSkoISkoJS8uJygoKCkpKSgpLCoqLiwsLCwtLS4uLi4vLy8vMDAtITEwKTw4IjAwMDAxMzIzMjIyMzU1NTU1NzY2NzQ3Pzk5OTo7Ozo6PDw8PDw8PT4/RkA5GktCHlhRMVtWNlhSOnhsLkFBQUJCQkNDQ0RERERFRUdGR0hISElJSUtLS01NTExMTU5OTlVUSlxaTVBQUFFSUlNSU1NVVVVVVVZVVlVVV1ZWVlhYWFpZWlpaWVpaWlpaW1xcXF5eXmpjQGBgYGJhYWBgY2JiYmNjY2RkZGVlZWZlZmdnZ2hnZ2pqamtra25ubm9vb3Bvb3FxcXJycnJydXd4d3p6enx7e39/f7SXEICBgYSEhIWFhYaGhomJiYqLioyMjI6Pjo+Pj5GRk5OTkZSUlJaWlpiYmJmYmZubm56enZ+fn6CgoKKhoaKioqSjo6SjpKampqmpqaurq6usrK6urq+vr6+wsLCwsLCwsrCws7KysLGysbKysrOzs7KytLSztLS0tLS0tba2trO0ubi4t7i4uLq6urm6vLy8vL6+vri6w7/AwMDAwMHBwcTExMbGxsfGx8rKyszMzM3NzdHR0dLS0tPS09XV1dfW19nZ2dra2tzc3N/f4eHh4ePl4+jo6PLx8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEuvGkoAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAABG0lEQVQoUwEQAe/+AHlwbGdjXlhSTUlAOTQyJL4AclpXUEtIQDw4Ny8qJ0MxqwB0X1daZmJZU01IPTAoMxqdAHNeYLG7r6WVjIR/dSsZGKIAc11vwcS9t7Cek4uANBMSowByW228w7q0qpaNiH0sEQ2hAHFYa7nCtqyblIyGeygTDKAAblZptb+0pZWOioR6IBAJoABqUmSwuK2ZkouHgnggDwigAGROYaWzppeQiYN+dh8MBKAAYkxemK2alY+IgX11HwsDoABcQU+RmI6KhX55d2gUCgKgAFVGO01RSj86LygmIxYOAZ8AZXxENS0pIiEdJRwbQhsFnABUR0U+OjYuKSAeFxUHBgCZAMCup6mopqalpKKdnJycmbL69GWV2M35cAAAAABJRU5ErkJggg==\" /><style type=\"text/css\">html, body {height: 100%;margin: 0;overflow: hidden;padding: 0;}body {background-color: rgb(29, 29, 29);font-family: Helvetica, sans-serif;}ul {margin: 0;padding: 0;}.hidden {display: none;}input.long {width: 500px;}.dialog {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  text-align: center;  top: 0;  transition: 250ms;  white-space: nowrap;  z-index: 5;}.dialog .height {  height: 100%;  display: inline-block;  vertical-align: middle;  width: 0;}.dialog .content {  box-shadow: 0 19px 60px rgba(0, 0, 0, 0.3);  box-sizing: border-box;  background: #ffffff;  display: inline-block;  max-height: 100%;  overflow-x: hidden;  overflow-y: auto;  padding: 17px;  text-align: left;  vertical-align: middle;  white-space: normal;}.dialog .content .title {  color: #616161;  font-size: 1.25em;  font-weight: bold;  margin: 0.5em 0;}.dialog .content .actions {  text-align: right;}.dialog.preactive {  display: block;}.dialog.active {  background-color: rgba(0, 0, 0, 0.3);}.dialog.active .content {  transform: translate(0, 0) scale(1) !important;  transition: all 0.4s ease-in-out;}.menu {  background-color: rgba(0, 0, 0, 0);  bottom: 0;  display: none;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms linear;  z-index: 4;}.menu .content {  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.25);  background-color: #ffffff;  bottom: 0;  left: 0;  position: absolute;  top: 0;  transform: translatex(-100%);  transition: all 0.4s ease-in-out;}.menu .content .title {  background-color: rgb(1, 87, 155);  color: #ffffff;  font-size: 1.25em;  font-weight: normal;  margin: 0 0 0.5em 0;  padding: 1em 0.5em;}.menu .content .items {margin: 0;padding: 0;}.menu .content .items .item {  margin: 0.5em 0;  overflow: hidden;  position: relative;}.menu .content .items .item .item-link, .menu .content .items .item .item-link * {  cursor: pointer;}.menu .content .items .item .item-link {  display: block;  padding: 1em 1.25em;  transition: 250ms;}.menu .content .items .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.menu.preactive {  display: block;}.menu.active {  background-color: rgba(0, 0, 0, 0.3);}.menu.active .content {  transform: translatex(0);}.input {  display: inline-block;  font-size: 1em;  position: relative;}.input input {  border: none;  border-bottom: 1px solid #e0e0e0;  color: #616161;  font: inherit;  margin: 1em 0 0 0;  outline: none;  transition: 250ms ease-in-out;}.input input:focus {  border-bottom-color: rgb(1, 87, 155);}.input input:invalid {  border-color: #e51c23;}.input .placeholder {  position: absolute;  top: 1em;  left: 0;  color: #bdbdbd;  transition: 250ms ease-in-out;}.input.focus .placeholder {  top: 0;  font-size: 0.75em !important;  color: rgb(1, 87, 155);}.input.has-content .placeholder,.input.no-placeholder .placeholder {  top: 0;  font-size: 0.75em !important;}.ripple {  content: \"\";  background-color: rgba(0, 0, 0, 0.4);  border-radius: 50%;  display: block;  height: 500px;  left: 0;  opacity: 1;  position: absolute;  top: 0;  transform: scale(0);  width: 500px;}.clicked .ripple {  opacity: 0;  transform: scale(1);  transition: transform 550ms ease-in-out, opacity 550ms ease-in-out;}button,input[type=\"button\"],input[type=\"submit\"] {  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);  background-color: rgb(1, 87, 155);  border: none;  color: white;  cursor: pointer;  font: inherit;  margin: 1em;  outline: none;  overflow: hidden;  padding: 0.5em;  position: relative;  transition: 200ms linear;  vertical-align: bottom;  width: 10em;}button:hover,input[type=\"button\"]:hover,input[type=\"submit\"]:hover {  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);  background-color: rgb(2, 119, 189);  transform: translate3d(0, -1px, 0);}.toasts {list-style: none;margin: 0;padding: 0;position: absolute;right: 2.5em;top: 2.5em;width: 20em;}.toast {background-color: rgb(255,255,255);border-top: 0.5em solid rgb(1, 87, 155);box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);box-sizing: border-box;margin: 0;opacity: 0;padding: 0.5em;}.toast.preactive {transition: 200ms ease-in-out;}.toast.active {margin-top: 0.5em !important;opacity: 1;}.toast > .title {font-weight: bold;}.toast > .info {font-size: small;}.toolbar {  height: 2.5em;  position: relative;}.toolbar .sect {  height: 100%;  position: absolute;  top: 0;}.toolbar .sect .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  margin: 0 0.5em;  overflow: hidden;  position: relative;}.toolbar .sect .item .item-link {  box-sizing: border-box;  color: inherit;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.45em 0.5em 0.25em 0.5em;  text-decoration: none;}.toolbar .sect .item .item-link:hover {  background-color: rgba(0, 0, 0, 0.12);}.toolbar .sect.primary {  left: 0;}.toolbar .sect.secondary {  right: 0;}.tabbar {  height: 2.5em;  position: relative;}.tabbar .items {  height: 100%;}.tabbar .items .item {  box-sizing: border-box;  display: inline-block;  height: 100%;  overflow: hidden;  position: relative;}.tabbar .items .item .item-link {  background-color: #03a9f4;  box-sizing: border-box;  color: #ffffff;  cursor: pointer;  display: block;  font-size: 1.25em;  height: 100%;  padding: 0.25em 0.5em 0.375em 0.5em;  text-align: center;}.tabbar .marker {  background-color: #ffeb3b;  bottom: 0;  height: 0.25em;  position: absolute;  transition: 400ms ease-in-out;}.tabbar.bottom .items .item .item-link {  padding: 0.375em 0.5em 0.25em 0.5em;}.tabbar.bottom .marker {  bottom: auto;  top: 0;}#app {position: absolute;top: 0;bottom: 0;right: 0;left: 0;/*transition: 400ms ease-in-out;*/}.appBtn {box-shadow: 0 3px 10px rgba(0,0,0,0.16);background-color: rgba(224, 224, 224, 0.25);border-radius: 50%;cursor: pointer;font-size: 47px;font-weight: bold;height: 50px;position: absolute;right: 10px;text-align: center;transition: 200ms;width: 50px;z-index: 2;}.appBtn:hover {box-shadow: 0 4px 30px rgba(0,0,0,0.16);background-color: rgba(238, 238, 238, 0.5);transform: translate3d(0, -1px, 0);}#new {top: 10px;}#settings {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAFsUlEQVRoge2Yf0yTRxjHn5bXtpQKLdbICpoOGAWCpEorogjo0C3AJmECi04FEpnT2WLcAttE3UjmwMVJkfgrOqpgpjEBRc1kIq3U6XBS1lgXnYmvs8YfC70OC9hWevtDKaWUUuRHk6Wf5JJ77+69fL+5u/d57gXw4sWLFy9evPx/oLzOSwghVtv168TVa9cAACAkOBhEcXEvhEKhcVzVjYJRGamRy7kajUYkFArLdDqd6M/btwEAgDttGgTzeJpWlaq4dOtWCAsNvcThcMwTonistCiVjKq9e48lLV6MWQEBmKDRBgqdjulMJo6KicGbpFJ88NChrZOtz8fdgfn5+cBgMARGo/FtrVYLZosFgEJ5WQAAW62g1+tBrVYDef/+grT09D51e7tqwpSPhXv37hGVMhm7Ri7/URwf3+fn748JOt22Kvb1N8PDTavXrt22RyZjeFq3S7RabfX7mZmtguhoTPP1HWKEoNPx/IUL8ZnGxjJPax0RhVIZcayuTvlBdvag89JfpzOZuHzXLuxpnW6BEAr5fvfueV+VlvZyuFyLvRGCTsdRMTG4o6OD5mmRc0cznqDRSmxbzG6bqVSqqxOlsR/qcB0kSa6sPX68vuH06WVuz0axC0sY255vqNWvr9BNhjXy5OnTdd+Vl8+qrKo6cPbcuXqEUIiriRBCMYXr1q121mcwGMaqc0SGNcLn8x8jhODXK1f46zdsyNxbXd0qLSrikyTJdjZee+sWFwCiAWDQagDGoNPpGPv27+fr9Xrm+Ft4icsUZXpQUC9CiAEAQKVSYWlqKmSkp58ym82bpBLJ4/5x8qNHqcbu7u3nz5/fdqGp6aURAJsZPz8/+DAnB8Risay7u/sLqUTSM1GGnLJy1ape+4M7hcHAEZGReElqav3NmzdLAADkcvmKxKSkqgWLFmFbgHRS6Ewmjp0zB2dmZR0mSbJgUo00nj3b6+fvPyRyT2WzcUJiYu+KnJyrbwkETwICA4c14PgF486YgbNzczsrZbI146nV5db6uqwsoq2t7cLF5mZ+X1/fQAe2i3EUJ1P0nxGHs2Jfn8blwqaNG4Hq4yP+sqTk97EacZk0KlpaOvPy8kwWiyXj4cOHgK3WATF2CaNNqLP2fhwM9fb0gEKpBKBQMtLS0qwVFRVdNTU1/4zV0LAghMIvNDUp5yUkOE8Q7Z+dtTvWHcbQmUwsiI7GH61Z89udO3cOv65Oty5WCCHup1JpkLWvT3m5tTXQYDCAyWQatAoEQQCTyYSQ4GBDd0+Pv06nozrdjo5b7lUfw9cXZs+ebZVKJCcB483vLFumH83lbFQ3RL1eP/cPjab0wMGDcKmlxT82NnaJ2WwGrVarCAsLM6wvLIQ5QuFOi8XyyWfFxTEkSYoePXo0eEs6nh8HU4EcDuTn54NYJPqGIIiyzOXLX4y7EXtIkgx8ZjQWdnZ2AgAcSUlOfmrf39DQEPm3Tneovr4+sVWlGroi/XUn+Pj4QML8+RApEOwpKS6+wufzT02YEXdACIV/u3NnyHOTqaW2rg6edXUNK34IGMMbPB6kJCc/FsXFfSyVSM5MpFa3IElSdKaxUZ2YlIRYAQHDxphB/wFetU1hMPBckchSXlGxwtM+bCgUioLPi4ufRURFOb1Rugqmx2pre13NTUyWCQCAlJSUIw8ePOiaymItutHeLrnY3Aym588HBjh+zfqhUIDNdpqr2phUIwAAM2fOPNXR0fGz2WLZx+Pxqk+cPLnEaDSC1dmX7RXhYWGg0WhyJ1vrqFAqlafjExK004OCnJ6TqWw23rxli1ahUIR6WuuIVMpkou07dqjF8fFDMubMrCz804kT6z2t0W1IkoyRFBVl5RUUYF8WCxM0Gs7OzcXKy5d/QQjNGun9CY0jo6WhoQEEAsG7/3Z1/YCtVvjr7t2l72Vk6DkczuRexLx48eLFixcvHuY/nQa0VsCJ2IsAAAAASUVORK5CYII=\");top: 80px;}#widgets {position: relative;}.widget {background-color: rgba(255,255,255, 0);/*box-shadow: 0 1px 4px rgba(0,0,0,0.16);*/min-height: 40px;overflow: hidden;position: absolute;transition: background-color ease-in-out 200ms;min-width: 60px;}.widget:hover, .widget.hovered {background-color: rgba(255,255,255, 0.5);}.widget.top {z-index: 1;}.widget .header {color: rgb(115, 115, 90);cursor: move;font-weight: bold;height: 20px;margin-bottom: 5px;position: relative;}.widget .header > .title {height: 18px;overflow: hidden;padding: 2px 50px 0 10px;text-overflow: ellipsis;white-space: nowrap;}.widget .header > .actions {opacity: 0;position: absolute;right: 0;top: 0;transition: opacity ease-in-out 200ms;}.widget:hover .header > .actions {opacity: 1;}.widget .header > .actions > li {cursor: pointer;display: inline-block;height: 20px;margin-left: 2px;width: 20px;}.widget .header > .actions > .close {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.widget .header > .actions > .config {background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.widget .canvas {bottom: 0;left: 0;position: absolute;right: 0;top: 25px;}.widget .value {text-align: right;}.widget .value > .leading {opacity: 0;}.widget .resizer {background-color: rgba(140,140,140, 0.5);bottom: 0;cursor: se-resize;height: 10px;opacity: 0;position: absolute;right: 0;width: 26px;background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);transform: rotate(-45deg) translateX(4px) translateY(6px);}.widget:hover .resizer {opacity: 1;}.shake {animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;transform: translate3d(0, 0, 0);backface-visibility: hidden;perspective: 1000px;}select.error { border-color: red; }@keyframes shake {10%, 90% {transform: translate3d(-1px, 0, 0);}20%, 80% {transform: translate3d(2px, 0, 0);}30%, 50%, 70% {transform: translate3d(-4px, 0, 0);}40%, 60% {transform: translate3d(4px, 0, 0);}}</style></head><body><div id=\"app\"><div class=\"appBtn\" id=\"new\" title=\"Add Widget\">+</div><div class=\"appBtn\" id=\"settings\" title=\"Settings\"></div><div id=\"widgets\"></div></div></body>';
-		
-		widgetDlg = new WidgetDlg();
-		widgetDlg.addListener('add', addWidget);
-		widgetDlg.addListener('change', changeWidget);
-		$('#new').addEventListener('click', widgetDlg.show);
-		
-		settingsDlg = new SettingsDlg();
-		settingsDlg.addListener('change', changeSettings);
-		$('#settings').addEventListener('click', settingsDlg.show);
-		
-		md.init();
-		
-		
-		
-		_data.addListener('update', updateData);
-		
-		Config.load();
-		Config.widgets.forEach(addWidget);
-		
-		if (Config.showGrid) {
-			showGrid();
-		}
-	};
-	
-	function showGrid() {
-		var bg = getComputedStyle(document.body).backgroundColor;
-		$('#app').style.backgroundColor = Config.gridColor;
-		$('#app').style.backgroundImage = 'repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ' + bg + ' 1px, ' + bg + ' ' + Config.gridSize + 'px),\
-					repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ' + bg + ' 1px, ' + bg + ' ' + Config.gridSize + 'px)';
-	}
-	function hideGrid() {
-		$('#app').delClass('grid');
-		$('#app').style.backgroundColor = '';
-		$('#app').style.backgroundImage = '';
-	}
-	
-	function changeSettings(settings) {
-		console.info('changeSettings', settings);
-		Config.grid = settings.grid;
-		Config.gridSize = settings.gridSize;
-		Config.gridColor = settings.gridColor;
-		Config.showGrid = settings.showGrid;
-		Config.save();
-		if (Config.showGrid) {
-			showGrid();
+
+	async hide(/**@type{Boolean}*/isAffirmative) {
+		if (this.trigger) {
+			await this.hideToTrigger();
 		} else {
-			hideGrid();
+			await this.hideToTop();
+		}
+		this.outcomeResolver(isAffirmative);
+	}
+
+	async hideToTrigger() {
+		const rect = this.content.getBoundingClientRect();
+		const triggerRect = this.trigger.getBoundingClientRect();
+		const x = `${Math.round((triggerRect.left + triggerRect.width * 0.5) - (rect.left + rect.width * 0.5))}px`;
+		const y = `${Math.round((triggerRect.top + triggerRect.height * 0.5) - (rect.top + rect.height * 0.5))}px`;
+		this.content.style.transform = `translate(${x}, ${y}) scale(0)`;
+
+		this.blocker.classList.remove('ohmd--dialog--active');
+		await wait(400);
+
+		this.blocker.classList.remove('ohmd--dialog--preactive');
+		this.content.style.transform = '';
+		this.content.style.transition = '';
+		this.trigger = null;
+	}
+
+	async hideToTop() {
+		const rect = this.content.getBoundingClientRect();
+		this.content.style.transform = `translate(0, ${-rect.bottom}px) scale(1)`;
+
+		this.blocker.classList.remove('ohmd--dialog--active');
+		await wait(400);
+
+		this.blocker.classList.remove('ohmd--dialog--preactive');
+		this.content.style.transform = '';
+		this.content.style.transition = '';
+		this.trigger = null;
+	}
+}
+
+
+// src\ohmd\ChartWidgetPreferences.js
+class ChartWidgetPreferences {
+	/**@type{String}*/ name;
+	/**@type{Number[]}*/ lineColor;
+	/**@type{Number[]}*/ fillColor;
+	/**@type{Number}*/ history;
+	/**@type{Number}*/ max;
+
+
+
+
+	constructor({name, lineColor, fillColor, history, max}) {
+		this.apply({name, lineColor, fillColor, history, max});
+	}
+
+	apply({name, lineColor, fillColor, history, max}) {
+		this.name = name;
+		this.lineColor = lineColor;
+		this.fillColor = fillColor;
+		this.history = history;
+		this.max = max;
+	}
+}
+
+
+// src\ohmd\ChartWidgetDialog.js
+
+
+
+
+class ChartWidgetDialog extends Dialog {
+	/**@type{ChartWidgetPreferences}*/ prefs;
+
+
+
+
+	constructor(/**@type{ChartWidgetPreferences}*/prefs) {
+		super('Widget Settings', 'OK', 'Cancel');
+		this.prefs = new ChartWidgetPreferences(prefs);
+
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const nameRow = document.createElement('div'); {
+			nameRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Name'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Name';
+					Binding.create(this.prefs, 'name', inp, 'value');
+					lbl.append(inp);
+				}
+				nameRow.append(lbl);
+			}
+			this.body.append(nameRow);
+		}
+		
+		const lineColorRow = document.createElement('div'); {
+			lineColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Line Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Line Color';
+					Binding.create(this.prefs, 'lineColor', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this.prefs, 'lineColor', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Line Color';
+					Binding.create(this.prefs, 'lineColor', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				lineColorRow.append(lbl);
+			}
+			this.body.append(lineColorRow);
+		}
+		
+		const fillColorRow = document.createElement('div'); {
+			fillColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Fill Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Fill Color';
+					Binding.create(this.prefs, 'fillColor', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this.prefs, 'fillColor', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Fill Color';
+					Binding.create(this.prefs, 'fillColor', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				fillColorRow.append(lbl);
+			}
+			this.body.append(fillColorRow);
+		}
+
+		const historyRow = document.createElement('div'); {
+			historyRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('History [s]'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'History';
+					Binding.create(this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				historyRow.append(lbl);
+			}
+			this.body.append(historyRow);
+		}
+
+		const maxRow = document.createElement('div'); {
+			maxRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Max. Value (0=auto)'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'Max Value';
+					Binding.create(this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				maxRow.append(lbl);
+			}
+			this.body.append(maxRow);
+		}
+	}
+}
+
+
+// src\ohmd\PixelService.js
+class PixelService {
+	/**@type{HTMLElement}*/ reference;
+	/**@type{Number}*/ offset = 0;
+	/**@type{Number}*/ factor = 1.0;
+
+
+
+
+	constructor(/**@type{HTMLElement}*/reference) {
+		this.reference = reference;
+	}
+
+
+
+
+	update() {
+		const rect = this.reference.getBoundingClientRect();
+		this.offset = rect.left;
+		this.factor = rect.right / rect.width;
+	}
+
+
+
+
+	x(value) {
+		return (value - this.offset) * this.factor;
+	}
+}
+
+
+// src\ohmd\Preferences.js
+class Preferences {
+	/**@type{Boolean}*/ #snapToGrid = true;
+	get snapToGrid() { return this.#snapToGrid ?? true; }
+	set snapToGrid(/**@type{Boolean}*/value) {
+		if (this.#snapToGrid != value) {
+			this.#snapToGrid = value;
+			this.save();
+		}
+	}
+
+	/**@type{Boolean}*/ #showGrid = true;
+	get showGrid() { return this.#showGrid ?? true; }
+	set showGrid(/**@type{Boolean}*/value) {
+		if (this.#showGrid != value) {
+			this.#showGrid = value;
+			this.save();
+		}
+	}
+
+	/**@type{Number}*/ #gridSize = 1;
+	get gridSize() { return this.#gridSize ?? 1; }
+	set gridSize(/**@type{Number}*/value) {
+		if (this.#gridSize != value) {
+			this.#gridSize = value;
+			this.save();
+		}
+	}
+
+
+
+
+	save() {
+		localStorage.setItem('ohmd-preferences', JSON.stringify({
+			snapToGrid: this.snapToGrid,
+			showGrid: this.showGrid,
+			gridSize: this.gridSize,
+		}));
+	}
+	load() {
+		const prefs = JSON.parse(localStorage.getItem('ohmd-preferences') || '{}');
+		this.snapToGrid = prefs.snapToGrid ?? true;
+		this.showGrid = prefs.showGrid ?? false;
+		this.gridSize = prefs.gridSize ?? 1;
+	}
+}
+
+
+// src\ohmd\Widget.js
+
+
+
+
+
+class Widget {
+	/**@type{String}*/ sensor;
+	/**@type{String[]}*/ id;
+	/**@type{String}*/ name;
+	/**@type{Preferences}*/ prefs;
+	/**@type{PixelService}*/ pixel;
+
+	/**@type{HTMLDivElement}*/ dom;
+	/**@type{HTMLDivElement}*/ body;
+
+	/**@type{Number}*/ #left = 0;
+	get left() { return this.#left; }
+	set left(value) {
+		if (this.#left != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
+			this.#left = value;
+			if (this.dom) this.dom.style.left = `${value}px`;
+		}
+	}
+	/**@type{Number}*/ #top = 0;
+	get top() { return this.#top; }
+	set top(value) {
+		if (this.#top != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
+			this.#top = value;
+			if (this.dom) this.dom.style.top = `${value}px`;
+		}
+	}
+
+	/**@type{Boolean}*/ isMoving = false;
+	pointerOffset = {left:0, top:0};
+
+	/**@type{Function}*/ onUpdate;
+	/**@type{Function}*/ onRemove;
+
+
+
+
+	constructor(/**@type{Preferences}*/prefs, /**@type{PixelService}*/pixel, {/**@type{String}*/sensor, /**@type{String}*/name, /**@type{Number}*/left=0, /**@type{Number}*/top=0}) {
+		this.sensor = sensor;
+		this.id = sensor.split('---');
+		this.name = name;
+		this.prefs = prefs;
+		this.pixel = pixel;
+
+		this.left = left;
+		this.top = top;
+	}
+
+
+	buildDom() {
+		addEventListener('pointermove', (evt)=>this.pointerMove(evt));
+		addEventListener('pointerup', (evt)=>this.pointerUp(evt));
+		const root = document.createElement('div'); {
+			this.dom = root;
+			root.classList.add('ohmd--widget');
+			const header = document.createElement('div'); {
+				header.classList.add('ohmd--widget-header');
+				header.addEventListener('pointerdown', (evt)=>this.startMove(evt));
+				const title = document.createElement('div'); {
+					title.classList.add('ohmd--widget-title');
+					Binding.create(this, 'name', title, 'textContent');
+					header.append(title);
+				}
+				const actions = document.createElement('div'); {
+					actions.classList.add('ohmd--widget-actions');
+					const config = document.createElement('a'); {
+						config.classList.add('ohmd--widget-action');
+						config.classList.add('ohmd--widget-config');
+						config.title = 'Configure Widget';
+						config.href = 'javascript:;';
+						config.addEventListener('click', ()=>this.showSettings(config));
+						actions.append(config);
+					}
+					const remove = document.createElement('a'); {
+						remove.classList.add('ohmd--widget-action');
+						remove.classList.add('ohmd--widget-remove');
+						remove.title = 'Remove Widget';
+						remove.href = 'javascript:;';
+						remove.addEventListener('click', ()=>this.remove());
+						actions.append(remove);
+					}
+					header.append(actions);
+				}
+				root.append(header);
+			}
+			const body = document.createElement('div'); {
+				this.body = body;
+				body.classList.add('ohmd--widget-body');
+				root.append(body);
+			}
+		}
+	}
+
+
+	startMove(/**@type{PointerEvent}**/evt) {
+		if (!this.isMoving) {
+			evt.preventDefault();
+			this.isMoving = true;
+			this.dom.classList.add('ohmd--hovered');
+			this.pointerOffset.left = this.left - this.pixel.x(evt.clientX);
+			this.pointerOffset.top = this.top - evt.clientY;
+		}
+	}
+	move(/**@type{PointerEvent}**/evt) {
+		evt.preventDefault();
+		this.left = this.pixel.x(evt.clientX) + this.pointerOffset.left;
+		this.top = evt.clientY + this.pointerOffset.top;
+	}
+	endMove(/**@type{PointerEvent}**/evt) {
+		evt.preventDefault();
+		this.isMoving = false;
+		this.dom.classList.remove('ohmd--hovered');
+		this.fireUpdate();
+	}
+
+
+	pointerMove(/**@type{PointerEvent}**/evt) {
+		if (this.isMoving) {
+			this.move(evt);
+		}
+	}
+	pointerUp(/**@type{PointerEvent}**/evt) {
+		if (this.isMoving) {
+			this.endMove(evt);
+		}
+	}
+
+
+
+
+	fireUpdate() {
+		if (this.onUpdate) {
+			this.onUpdate();
+		}
+	}
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		throw 'Widget.showSettings() is not implemented!';
+	}
+
+	remove() {
+		this.dom.remove();
+		if (this.onRemove) {
+			this.onRemove(this);
+			this.onRemove = null;
+		}
+	}
+
+
+	getConfig() {
+		throw 'Widget.getConfig() is not implemented!';
+	}
+
+
+
+
+	setData(data) {
+		log(this.id, data);
+		let item = data;
+		for (const id of this.id) {
+			item = item.Children.find(it=>it.Text == id);
+			if (!item) break;
+		}
+		if (!item) {
+			//TODO error
+			error('error')
+		} else {
+			//TODO data
+			log(item.Value);
+		}
+	}
+}
+
+
+// src\ohmd\ChartWidget.js
+
+
+
+
+
+class ChartWidget extends Widget {
+	chart;
+
+	/**@type{Number}*/ #width = 0;
+	get width() { return this.#width; }
+	set width(value) {
+		if (this.#width != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
+			this.#width = value;
+			if (this.dom) this.dom.style.width = `${value}px`;
+		}
+	}
+	/**@type{Number}*/ #height = 0;
+	get height() { return this.#height; }
+	set height(value) {
+		if (this.#height != value) {
+			if (this.prefs.snapToGrid) {
+				value = Math.round(value/this.prefs.gridSize) * this.prefs.gridSize;
+			}
+			this.#height = value;
+			if (this.dom) this.dom.style.height = `${value}px`;
+		}
+	}
+
+	/**@type{Number}*/ history = 120;
+	
+	
+	/**@type{Number}*/ #max = null;
+	get max() { return this.#max; }
+	set max(value) {
+		if (this.#max != value) {
+			this.#max = value;
+			if (this.chart) this.chart.options.scales.yAxis.suggestedMax = value;
+		}
+	}
+
+	/**@type{String}*/ #lineColor;
+	get lineColor() { return this.#lineColor; }
+	set lineColor(value) {
+		if (this.#lineColor != value) {
+			this.#lineColor = value;
+			if (this.chart) this.chart.data.datasets[0].borderColor = `rgba(${value.join(', ')})`;
 		}
 	}
 	
-	function addWidget(config) {
-		var widget = new Widget(config);
-		widget.addListener('remove', removeWidget);
-		widget.addListener('config', updateConfig);
-		widget.addListener('showConfig', showConfig);
-		_widgets.push(widget);
-		updateConfig();
+	/**@type{String}*/ #fillColor;
+	get fillColor() { return this.#fillColor; }
+	set fillColor(value) {
+		if (this.#fillColor != value) {
+			this.#fillColor = value;
+			if (this.chart) this.chart.data.datasets[0].backgroundColor = `rgba(${value.join(', ')})`;;
+		}
 	}
-	function changeWidget(args) {
-		removeWidget(args.widget);
-		addWidget(args.config);
-	}
-	function removeWidget(widget) {
-		_widgets.splice(_widgets.lastIndexOf(widget), 1);
-		updateConfig();
-	}
-	
-	function updateConfig() {
-		Config.widgets = _widgets.map(function(widget) { return widget.getConfig(); });
-		Config.save();
-	}
-	function showConfig(evt) {
-		widgetDlg.show(evt.evt, evt.widget);
-	}
-	
-	function updateData(data) {
-		_widgets.forEach(function(widget) {
-			widget.setData(data);
-		});
-		widgetDlg.updateSensors(data);
-	}
-	
-	
-	
-	OHMDashboard();
-	return module={
+
+	/**@type{Boolean}*/ isResizing = false;
+	resizeOrigin = {
+		left: 10,
+		top: 10,
+		width:400,
+		height:300
 	};
-});
-		
-		
-		//
-		// VARS
-		//
-		function init() {
-			var dashboard = new OHMDashboard();
+
+	data;
+
+
+
+
+	constructor(
+		/**@type{Preferences}*/prefs,
+		/**@type{PixelService}*/pixel,
+		{
+			/**@type{String}*/sensor,
+			/**@type{String}*/name,
+			/**@type{Number}*/left=0,
+			/**@type{Number}*/top=0,
+			/**@type{Number}*/width=400,
+			/**@type{Number}*/height=300,
+			/**@type{String}*/lineColor=null,
+			/**@type{String}*/fillColor=null,
+			/**@type{Number}*/history=120,
+			/**@type{Number}*/max=0,
 		}
-		init();
+		) {
+		super(prefs, pixel, {sensor, name});
+		this.buildDom();
+		this.left = left;
+		this.top = top;
+		this.width = width;
+		this.height = height;
+		if (lineColor === null) {
+			if (this.sensor.toLowerCase().search('nvidia') != -1) {
+				this.lineColor = [118, 185, 0, 0.25];
+			} else if (this.sensor.toLowerCase().search('intel') != -1) {
+				this.lineColor = [0, 113, 197, 0.25];
+			} else {
+				this.lineColor = [115, 115, 90, 0.25];
+			}
+		} else {
+			this.lineColor = lineColor;
+		}
+		if (fillColor === null) {
+			if (this.sensor.toLowerCase().search('nvidia') != -1) {
+				this.fillColor = [118, 185, 0, 0.125];
+			} else if (this.sensor.toLowerCase().search('intel') != -1) {
+				this.fillColor = [0, 113, 197, 0.125];
+			} else {
+				this.fillColor = [115, 115, 90, 0.125];
+			}
+		} else {
+			this.fillColor = fillColor;
+		}
+		this.history = history;
+		this.max = max;
 	}
+
+
+	buildDom() {
+		super.buildDom();
+
+		const chartContainer = document.createElement('div'); {
+			chartContainer.classList.add('ohmd--widget-chartContainer');
+			const canvas = document.createElement('canvas'); {
+				canvas.height = '300';
+				canvas.width = '400';
+				this.chart = new Chart(canvas.getContext('2d'), {
+					type: 'line',
+					data: {
+						labels: [],
+						datasets: [{
+							fill: true,
+							pointRadius: 0,
+							data: [],
+						}],
+					},
+					options: {
+						animation: false,
+						maintainAspectRatio: false,
+						scales: {
+							yAxis: {
+								suggestedMin: 0,
+								gridLines: {
+									color: 'rgba(50,50,50,0.5)',
+								},
+							},
+							xAxis: {
+								gridLines: {
+									color: 'rgba(50,50,50,0.5)',
+								},
+							},
+						},
+						plugins: {
+							legend: {
+								display: false,
+							},
+						},
+					},
+				});
+				chartContainer.append(canvas);
+			}
+			this.body.append(chartContainer);
+		}
+		const resizer = document.createElement('div'); {
+			resizer.classList.add('ohmd--widget-resizer');
+			resizer.addEventListener('pointerdown', (evt)=>this.startResize(evt));
+			this.body.append(resizer);
+		}
+		this.data = this.chart.data.datasets[0].data;
+	}
+
+
+
+
+	startResize(/**@type{PointerEvent}**/evt) {
+		if (!this.isResizing) {
+			evt.preventDefault();
+			this.isResizing = true;
+			this.dom.classList.add('ohmd--hovered');
+			this.resizeOrigin.left = this.left + this.width;
+			this.resizeOrigin.top = this.top + this.height;
+			this.resizeOrigin.width = this.width;
+			this.resizeOrigin.height = this.height;
+			this.pointerOffset.left = this.resizeOrigin.left - this.pixel.x(evt.clientX);
+			this.pointerOffset.top = this.resizeOrigin.top - evt.clientY;
+		}
+	}
+	resize(/**@type{PointerEvent}**/evt) {
+		evt.preventDefault();
+		this.width = this.resizeOrigin.width + this.pixel.x(evt.clientX) - this.resizeOrigin.left + this.pointerOffset.left;
+		this.height = this.resizeOrigin.height + evt.clientY - this.resizeOrigin.top + this.pointerOffset.top;
+	}
+	endResize(/**@type{PointerEvent}**/evt) {
+		evt.preventDefault();
+		this.isResizing = false;
+		this.dom.classList.remove('ohmd--hovered');
+		this.fireUpdate();
+	}
+
+
+	pointerMove(/**@type{PointerEvent}**/evt) {
+		if (this.isResizing) {
+			this.resize(evt);
+		} else {
+			super.pointerMove(evt);
+		}
+	}
+	pointerUp(/**@type{PointerEvent}**/evt) {
+		if (this.isResizing) {
+			this.endResize(evt);
+		} else {
+			super.pointerUp(evt);
+		}
+	}
+
+
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		const prefs = new ChartWidgetPreferences(this.getConfig());
+		const dlg = new ChartWidgetDialog(prefs)
+		await dlg.show(trigger);
+		if (await dlg.outcome) {
+			this.name = dlg.prefs.name;
+			this.lineColor = dlg.prefs.lineColor;
+			this.fillColor = dlg.prefs.fillColor;
+			this.history = dlg.prefs.history;
+			this.max = dlg.prefs.max;
+			this.fireUpdate();
+		}
+	}
+
+
+	getConfig() {
+		return {
+			type: 'chart',
+			sensor: this.sensor,
+			name: this.name,
+			left: this.left,
+			top: this.top,
+			width: this.width,
+			height: this.height,
+			history: this.history,
+			max: this.max,
+			lineColor: this.lineColor,
+			fillColor: this.fillColor,
+		}
+	}
+
+
+
+
+	setData(data) {
+		let item = data;
+		for (const part of this.id) {
+			item = item.Children.find(it=>it.Text == part);
+			if (!item) break;
+		}
+		if (!item) {
+			//TODO error
+			error('error')
+		} else {
+			//TODO data
+			this.data?.push(parseFloat(item.Value.replace(',', '.')));
+			const labels = [];
+			const skip = Math.round(this.history / 15);
+			for (let i=-this.history; i<1; i++) {
+				if (i%skip == 0) {
+					labels.push(i);
+				} else {
+					labels.push('');
+				}
+			}
+			this.chart.data.labels = labels;
+			while (this.data.length < this.history + 1) {
+				this.data.unshift(null);
+			}
+			while (this.data.length > this.history + 1) {
+				this.data.shift();
+			}
+			if (item.Value.search(/%$/) != -1) {
+				this.chart.options.scales.yAxis.suggestedMax = 100;
+			}
+			this.chart.update();
+		}
+	}
+}
+
+
+// src\ohmd\SettingsDialog.js
+
+
+
+
+class SettingsDialog extends Dialog {
+	/**@type{Boolean}*/ snapToGrid = true;
+	/**@type{Boolean}*/ showGrid = false;
+	/**@type{Number}*/ gridSize = 10;
+
+
+
+
+	constructor(/**@type{Preferences}*/prefs) {
+		super('Settings', 'OK', 'Cancel');
+		this.snapToGrid = prefs.snapToGrid;
+		this.showGrid = prefs.showGrid;
+		this.gridSize = prefs.gridSize;
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const snapRow = document.createElement('div'); {
+			snapRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				const inp = document.createElement('input'); {
+					inp.type = 'checkbox';
+					inp.placeholder = 'Snap to Grid';
+					Binding.create(this, 'snapToGrid', inp, 'checked');
+					lbl.append(inp);
+				}
+				lbl.append(document.createTextNode('Snap to Grid'));
+				snapRow.append(lbl);
+			}
+			this.body.append(snapRow);
+		}
+
+		const showRow = document.createElement('div'); {
+			showRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				const inp = document.createElement('input'); {
+					inp.type = 'checkbox';
+					inp.placeholder = 'Show Grid';
+					Binding.create(this, 'showGrid', inp, 'checked');
+					lbl.append(inp);
+				}
+				lbl.append(document.createTextNode('Show Grid'));
+				showRow.append(lbl);
+			}
+			this.body.append(showRow);
+		}
+
+		const sizeRow = document.createElement('div'); {
+			sizeRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Grid Size'));
+				const inp = document.createElement('input'); {
+					inp.type = 'number';
+					inp.max = 999;
+					inp.min = 5;
+					inp.placeholder = 'Grid Size';
+					Binding.create(this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				sizeRow.append(lbl);
+			}
+			this.body.append(sizeRow);
+		}
+	}
+}
+
+
+// src\ohmd\ValueWidgetDialog.js
+
+
+class ValueWidgetDialog extends Dialog {
+	/**@type{String}*/ name;
+	/**@type{String}*/ color;
+	/**@type{String}*/ format;
+	/**@type{Number}*/ fontSize;
+
+
+
+
+	constructor({/**@type{String}*/name, /**@type{String}*/color, /**@type{String}*/format, /**@type{Number}*/fontSize}) {
+		super('Widget Settings', 'OK', 'Cancel');
+		this.name = name;
+		this.color = color;
+		this.format = format;
+		this.fontSize = fontSize;
+
+		this.buildBody();
+	}
+
+
+	buildBody() {
+		const nameRow = document.createElement('div'); {
+			nameRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Name'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Name';
+					Binding.create(this, 'name', inp, 'value');
+					lbl.append(inp);
+				}
+				nameRow.append(lbl);
+			}
+			this.body.append(nameRow);
+		}
+		
+		const lineColorRow = document.createElement('div'); {
+			lineColorRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Color'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input');
+					inp.type = 'text';
+					inp.placeholder = 'Color';
+					Binding.create(this, 'color', inp, 'value',
+						v=>v.slice(0,3).join(' '),
+						v=>[...v.split(' '), parseInt(opacity.value)/100],
+					);
+					lbl.append(inp);
+				}
+
+				lbl.append(document.createTextNode('@'));
+
+				const opacity = document.createElement('input'); {
+					opacity.type = 'number';
+					opacity.placeholder = 'Opacity';
+					opacity.max = 100;
+					opacity.min = 0;
+					Binding.create(this, 'color', opacity, 'value',
+						v=>v.slice(-1)*100,
+						v=>[...inp.value.split(' '), parseInt(v)/100]
+					);
+					lbl.append(opacity);
+				}
+
+				const picker = document.createElement('input'); {
+					picker.type = 'color';
+					picker.placeholder = 'Color';
+					Binding.create(this, 'color', picker, 'value',
+						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
+						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
+					);
+					lbl.append(picker);
+				}
+				lineColorRow.append(lbl);
+			}
+			this.body.append(lineColorRow);
+		}
+		
+		const sizeRow = document.createElement('div'); {
+			sizeRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Font Size'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'number';
+					inp.placeholder = 'Font Size';
+					inp.min = 1;
+					inp.max = 999;
+					Binding.create(this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
+					lbl.append(inp);
+				}
+				sizeRow.append(lbl);
+			}
+			this.body.append(sizeRow);
+		}
+		
+		const formatRow = document.createElement('div'); {
+			formatRow.classList.add('ohmd--dialog--body--row');
+			const lbl = document.createElement('label'); {
+				lbl.append(document.createTextNode('Format'));
+				const inp = document.createElement('input'); {
+					inp.classList.add('ohmd--input--long');
+					inp.type = 'text';
+					inp.placeholder = 'Format';
+					Binding.create(this, 'format', inp, 'value');
+					lbl.append(inp);
+				}
+				formatRow.append(lbl);
+			}
+			this.body.append(formatRow);
+		}
+	}
+}
+
+
+// src\ohmd\ValueWidget.js
+
+
+
+class ValueWidget extends Widget {
+	/**@type{String}*/ #color;
+	get color() { return this.#color; }
+	set color(value) {
+		if (this.#color != value) {
+			this.#color = value;
+			this.value.style.color = `rgba(${value.join(', ')})`;
+		}
+	}
+	
+	/**@type{Number}*/ #fontSize;
+	get fontSize() { return this.#fontSize; }
+	set fontSize(value) {
+		if (this.#fontSize != value) {
+			this.#fontSize = value;
+			this.value.style.fontSize = `${value}px`;
+		}
+	}
+
+	/**@type{String}*/ format;
+
+	/**@type{HTMLDivElement}*/ value;
+
+
+
+
+	constructor(
+		/**@type{Preferences}*/prefs,
+		/**@type{PixelService}*/pixel,
+		{
+			/**@type{String}*/sensor,
+			/**@type{String}*/name,
+			/**@type{Number}*/left=0,
+			/**@type{Number}*/top=0,
+			/**@type{String}*/color=null,
+			/**@type{Number}*/fontSize=null,
+			/**@type{String}*/format=null,
+		}
+	) {
+		super(prefs, pixel, {sensor, name});
+		this.buildDom();
+		this.left = left;
+		this.top = top;
+		if (color === null) {
+			if (this.sensor.toLowerCase().search('nvidia') != -1) {
+				this.color = [118, 185, 0, 1];
+			} else if (this.sensor.toLowerCase().search('intel') != -1) {
+				this.color = [0, 113, 197, 1];
+			} else {
+				this.color = [115, 115, 90, 1];
+			}
+		} else {
+			this.color = color;
+		}
+		this.fontSize = fontSize ?? 32;
+		this.format = format ?? '0';
+	}
+
+
+	buildDom() {
+		super.buildDom();
+
+		const container = document.createElement('div'); {
+			container.classList.add('ohmd--widget-valueContainer');
+			const value = document.createElement('div'); {
+				this.value = value,
+				value.classList.add('ohmd--widget-value');
+				container.append(value);
+			}
+			this.body.append(container);
+		}
+	}
+
+
+
+
+	async showSettings(/**@type{HTMLElement}*/trigger) {
+		const dlg = new ValueWidgetDialog(this.getConfig());
+		await dlg.show(trigger);
+		if (await dlg.outcome) {
+			this.name = dlg.name,
+			this.color = dlg.color;
+			this.fontSize = dlg.fontSize;
+			this.format = dlg.format;
+			this.fireUpdate();
+		}
+	}
+
+
+	getConfig() {
+		return {
+			type: 'value',
+			sensor: this.sensor,
+			name: this.name,
+			left: this.left,
+			top: this.top,
+			color: this.color,
+			format: this.format,
+			fontSize: this.fontSize,
+		}
+	}
+
+
+
+
+	setData(data) {
+		let item = data;
+		for (const part of this.id) {
+			item = item.Children.find(it=>it.Text == part);
+			if (!item) break;
+		}
+		if (!item) {
+			//TODO error
+			error('error')
+		} else {
+			const value = parseFloat(item.Value.replace(',', '.'));
+			const parts = this.format.match(/(\d+)(?:([\.,:])(\d+))?(?:(\s*)\$(.+))?/);
+			if (parts[2] == undefined) parts[2] = '';
+			if (parts[3] == undefined) parts[3] = '';
+			if (parts[4] == undefined) parts[4] = '';
+			if (parts[5] == undefined) parts[5] = '';
+			let out = '';
+			let leading = '';
+			const p1l = parseInt(value).toString().length;
+			if (parts[1].length > 0 && p1l < parts[1].length) {
+				leading = '0'.repeat(parts[1].length - p1l);
+			}
+			out += parseInt(value);
+			if (parts[2].length > 0) {
+				out += parts[2];
+			}
+			if (parts[3].length > 0) {
+				out += value.toFixed(parts[3].length).slice(-parts[3].length);
+			}
+			if (parts[5].length > 0) {
+				out += `${parts[4]}${parts[5]}`;
+			}
+			this.value.textContent = `${leading}${out}`;
+		}
+	}
+}
+
+
+// src\ohmd\TimeWidget.js
+
+
+class TimeWidget extends ValueWidget {
+	constructor(
+		/**@type{Preferences}*/prefs,
+		/**@type{PixelService}*/pixel,
+		{
+			/**@type{Number}*/left=0,
+			/**@type{Number}*/top=0,
+			/**@type{String}*/color=null,
+			/**@type{Number}*/fontSize=null,
+		}
+	) {
+		super(prefs, pixel, {sensor:'', left, top, color, fontSize});
+	}
+
+
+
+
+	getConfig() {
+		return {
+			type: 'time',
+			left: this.left,
+			top: this.top,
+			color: this.color,
+			fontSize: this.fontSize,
+		}
+	}
+
+
+
+
+	setData(data) {
+		const d = new Date();
+		this.value.textContent = `${`00${d.getHours()}`.slice(-2)}:${`00${d.getMinutes()}`.slice(-2)}`;
+	}
+}
+
+
+// src\ohmd\Dashboard.js
+
+
+
+
+
+
+
+
+
+
+
+class Dashboard {
+	/**@type{HTMLDivElement}*/ ohmHeader;
+	/**@type{HTMLDivElement}*/ ohmMain;
+	
+	/**@type{HTMLDivElement}*/ ohmContainer;
+	/**@type{HTMLDivElement}*/ ohmContent;
+	/**@type{Number}*/ ohmWidth;
+
+	/**@type{HTMLDivElement}*/ container;
+
+	/**@type{Boolean}*/ isOhmShown = false;
+
+	/**@type{PixelService}*/ pixel;
+
+	/**@type{Widget[]}*/ widgets = [];
+
+	/**@type{Preferences}*/ prefs;
+
+
+
+
+	constructor() {
+		this.prefs = new Preferences();
+		this.prefs.load();
+		this.buildDom();
+		this.pixel = new PixelService(this.container);
+
+		this.modifyOhmDom();
+		this.loadWidgets();
+
+		if (this.widgets.length == 0) {
+			this.showOhm();
+		}
+
+		const gridBgConverter = v=>{
+			const bg = 'rgb(29, 29, 29)';
+			return [
+				`repeating-linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+				`repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
+			].join(',');
+		};
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
+		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
+		Binding.create(this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
+
+		this.fetchData();
+	}
+
+
+	buildDom() {
+		this.ohmHeader = $('.header');
+		this.ohmMain = $('.main');
+		this.ohmWidth = $(this.ohmMain, '.treeTable').getBoundingClientRect().width + 40 + 15;
+
+		const style = document.createElement('style'); {
+			style.innerHTML = 'html,body {  margin: 0;  padding: 0;}body {  background-color: #1d1d1d;  display: flex;  flex-direction: row;}.header {  align-items: center;  display: flex;  flex-direction: row;  justify-content: space-between;}.ohmd--ohmContainer {  background-color: #969696;  box-sizing: border-box;  height: 100vh;  left: 0vw;  overflow: auto;  position: absolute;  top: 0;  transition: 200ms;  z-index: 2;}.ohmd--ohmContainer > .ohmd--ohmContainer-content {  box-sizing: border-box;  direction: rtl;  height: 100vh;  overflow: auto;  padding: 0 10px;}.ohmd--ohmContainer > .ohmd--ohmContainer-content > .header,.ohmd--ohmContainer > .ohmd--ohmContainer-content > .main {  direction: ltr;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle {  box-sizing: border-box;  background-color: transparent;  color: #646464;  cursor: pointer;  display: block;  height: 100vh;  line-height: 20px;  padding-top: calc(50vh - 30px);  position: absolute;  right: 0;  text-align: center;  top: 0;  width: 15px;}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:after {  content: \"◀ ◀ ◀\";}.ohmd--ohmContainer > .ohmd--ohmContainer-toggle:hover {  background-color: rgba(60 60 60 / 50%);}.ohmd--ohmContainer.ohmd--collapsed {  background-color: transparent;}.ohmd--ohmContainer.ohmd--collapsed > .ohmd--ohmContainer-toggle:after {  content: \"▶ ▶ ▶\";}.ohmd--container {  flex: 1 1 100vw;  height: 100vh;  position: relative;  transform-origin: right;  transition: transform 200ms;}.ohmd--container > .ohmd--widget {  background-color: rgba(255 255 255 / 0%);  min-height: 40px;  overflow: hidden;  position: absolute;  transition: background-color ease-in-out 200ms;  min-width: 60px;}.ohmd--container > .ohmd--widget:hover,.ohmd--container > .ohmd--widget.ohmd--hovered {  background-color: rgba(255 255 255 / 25%);}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-header > .ohmd--widget-actions,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 1;}.ohmd--container > .ohmd--widget:hover > .ohmd--widget-body > .ohmd--widget-resizer,.ohmd--container > .ohmd--widget.ohmd--hovered > .ohmd--widget-body > .ohmd--widget-resizer {  opacity: 1;}.ohmd--container > .ohmd--widget > .ohmd--widget-header {  color: #73735a;  cursor: move;  font-weight: bold;  height: 20px;  margin-bottom: 5px;  position: relative;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-title {  font-size: 16px;  height: 18px;  overflow: hidden;  padding: 2px 50px 0 10px;  text-overflow: ellipsis;  white-space: nowrap;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions {  opacity: 0;  position: absolute;  right: 0;  top: 0;  transition: opacity ease-in-out 200ms;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action {  display: inline-block;  height: 20px;  margin-left: 2px;  width: 20px;}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-remove {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjVJivzgAAAA30lEQVQ4T9WUQQqDMBBFhdxAg5tk5w1ciguP4qL3LyJdlna+ycg0xGS6az98osn8NyhDmr+WjWtOfVx1MsasXddt9DiHnQ/NOKOaW3wvC7BhGJ7jOL6cczttSejsvd9xhpoqVMLYAnrC2DVoS59ylwE2oCmMba1Fw8t/OlF4ywVzpiYPyiwhei0VVAtjFaHfwqAFoRwMRjOqmUJpXUUYWwtVwdg1aI8RyAWpyU7h7BlGjbJtQCTCkKaDDRgdHYOdQuNgr0f4ShIqYKwTqoKxAFVcDjqYUOmKKl1tP62meQNRWMNDZctVeQAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-header > .ohmd--widget-actions > .ohmd--widget-action.ohmd--widget-config {  background-image: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABk0lEQVQ4jWNgGAWUAkZ0gYWLFkkcPHQo/9GjRxIiIiI3y8vKVhkaGNwj24aJkyZ5qWlo3GXl4PjPws7+X05B4XVAUJAeRc6+evWqRFRMzHxhMbGfLOzs/y2trV+TbMiuXbvUVq5aJYcspmdg4MfCxvaflYPj/+o1axyIMYcJxjh0+LBbQ2Pj+dKysiSYmL+/vwYDIyPD/3//GE6cPGlBkgt7+/oMxCQl/3Pz8f13dHHZ7OTqWiSnoPCShZ39Pws7+38+QcH/Hl5eKydMmsRHtKG+/v6L2Tg5/7Ows/9nYWNDpaFYVUPjY3RcXNitW7fYCBr4/v17gdDw8G4ZefmHkjIyvxVVVO5b2dgc5+Hn/4tsKBcv7393L6/9GzZu1CHKpQ8ePGA6efKkFoxfUloap2do+JGFje0/MpaVl38bl5CQRXQQIINly5dLRURFbRYUEUEJBjlFxd+XL1/WImwCFnDhwgWmrJwcNzVNzbswAw2NjU++e/eOibBuPODBgwciMXFxs908PC5u3bbNgSLDRgEGAADSHpQeJbnt6wAAAABJRU5ErkJggg==\");}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-chartContainer {  bottom: 0;  left: 0;  position: absolute;  right: 0;  top: 25px;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-valueContainer > .ohmd--widget-value {  text-align: right;}.ohmd--container > .ohmd--widget > .ohmd--widget-body > .ohmd--widget-resizer {  background-color: rgba(140, 140, 140, 0.5);  bottom: 0;  cursor: se-resize;  height: 10px;  opacity: 0;  position: absolute;  right: 0;  width: 26px;  background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);  transform: rotate(-45deg) translateX(4px) translateY(6px);}.ohmd--dialog--blocker {  align-items: center;  background-color: rgba(0 0 0 / 0%);  bottom: 0;  display: none;  justify-content: center;  left: 0;  position: fixed;  right: 0;  top: 0;  transition: 250ms;  z-index: 100;}.ohmd--dialog--blocker > .ohmd--dialog--content {  box-shadow: 0 19px 60px rgba(0 0 0 / 30%);  box-sizing: border-box;  background-color: #646464;  display: inline-block;  max-height: calc(100vh - 20px);  overflow: auto;  padding: 17px;  max-width: calc(100vw - 20px);}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--header {  flex: 0 0 auto;  font-size: 2em;  font-weight: bold;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body {  flex: 1 1 auto;  font-size: 1.5em;  margin: 1.5em 0;  overflow: auto;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row {  margin: 0.5em 0;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--body > .ohmd--dialog--body--row > label > input {  margin: 0 1em;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer {  flex: 0 0 auto;  text-align: right;}.ohmd--dialog--blocker > .ohmd--dialog--content > .ohmd--dialog--footer > button {  margin: 0 0.5em;}.ohmd--dialog--blocker.ohmd--dialog--preactive {  display: flex;}.ohmd--dialog--blocker.ohmd--dialog--active {  background-color: rgba(0 0 0 / 30%);}.ohmd--dialog--blocker.ohmd--dialog--active > .ohmd--dialog--content {  transform: translate(0, 0) scale(1) !important;  transition: all 400ms ease-in-out;}';
+			document.body.append(style);
+		}
+
+		const ohm = document.createElement('div'); {
+			this.ohmContainer = ohm;
+			ohm.classList.add('ohmd--ohmContainer');
+			ohm.style.width = `${this.ohmWidth}px`;
+			const content = document.createElement('div'); {
+				this.ohmContent = content;
+				content.classList.add('ohmd--ohmContainer-content');
+				ohm.append(content);
+			}
+			const toggle = document.createElement('div'); {
+				toggle.classList.add('ohmd--ohmContainer-toggle');
+				toggle.title = 'Show / Hide Sensors'
+				toggle.addEventListener('click', ()=>this.toggleOhm());
+				ohm.append(toggle);
+			}
+			document.body.append(ohm);
+		}
+		this.ohmContent.append(this.ohmHeader); {
+			const buttons = document.createElement('div'); {
+				buttons.classList.add('headerButtons');
+				const settingsBtn = document.createElement('button'); {
+					settingsBtn.classList.add('ohmd--settingsButton');
+					settingsBtn.textContent = 'Settings';
+					settingsBtn.addEventListener('click', async(evt)=>{
+						evt.preventDefault();
+						const dlg = new SettingsDialog(this.prefs);
+						await dlg.show(settingsBtn);
+						if (await dlg.outcome) {
+							this.prefs.snapToGrid = dlg.snapToGrid;
+							this.prefs.showGrid = dlg.showGrid;
+							this.prefs.gridSize = dlg.gridSize;
+						}
+					});
+					buttons.append(settingsBtn);
+				}
+				const timeBtn = document.createElement('button'); {
+					timeBtn.classList.add('ohmd--timeButton');
+					timeBtn.textContent = 'Time Widget';
+					timeBtn.addEventListener('click', async(evt)=>{
+						evt.preventDefault();
+						this.addTimeWidget();
+					});
+					buttons.append(timeBtn);
+				}
+				this.ohmHeader.append(buttons);
+			}
+		}
+		this.ohmContent.append(this.ohmMain);
+
+		const container = document.createElement('div'); {
+			this.container = container;
+			container.classList.add('ohmd--container');
+			document.body.append(container);
+		}
+
+		this.hideOhm();
+	}
+
+	modifyOhmDom() {
+		const nodes = {};
+		$$(this.ohmMain, '.treeTable > tbody > tr').forEach((/**@type{HTMLElement}*/row)=>{
+			const name = row.children[0].textContent.trim();
+			const parent = row.className.replace(/^.*?(?:child-of-(node-\d+))?.*$/, '$1');
+			let id;
+			if (parent) {
+				id = `${nodes[parent]}---${name}`;
+			} else {
+				id = name;
+			}
+			nodes[row.id] = id;
+			row.setAttribute('data-ohmd-id', id);
+			if (!row.classList.contains('parent') && row.children[2].textContent.trim() != '' && row.children[2].textContent.trim() != '-') {
+				row.children[0].style.position = 'relative';
+				const btnChart = document.createElement('button'); {
+					btnChart.textContent = '📈';
+					btnChart.title = 'Add Chart Widget';
+					btnChart.style.position = 'absolute';
+					btnChart.style.left = '0px';
+					btnChart.style.top = '0px';
+					btnChart.style.padding = '0px';
+					btnChart.style.width = '22px';
+					btnChart.style.height = '21px';
+					btnChart.addEventListener('click', ()=>{
+						this.addChartWidget(id, name);
+					});
+					row.children[0].append(btnChart);
+				}
+				const btnValue = document.createElement('button'); {
+					btnValue.textContent = '#';
+					btnValue.title = 'Add Value Widget';
+					btnValue.style.position = 'absolute';
+					btnValue.style.left = '24px';
+					btnValue.style.top = '0px';
+					btnValue.style.padding = '0px';
+					btnValue.style.width = '22px';
+					btnValue.style.height = '21px';
+					btnValue.addEventListener('click', ()=>{
+						this.addValueWidget(id, name);
+					});
+					row.children[0].append(btnValue);
+				}
+			}
+		});
+	}
+
+
+
+
+	async toggleOhm() {
+		if (this.isOhmShown) {
+			this.hideOhm();
+		} else {
+			this.showOhm();
+		}
+	}
+	async showOhm() {
+		this.isOhmShown = true;
+		this.ohmContainer.classList.remove('ohmd--collapsed');
+		this.container.classList.add('ohmd--shrunk');
+		this.ohmContainer.style.left = `0px`;
+		this.container.style.transform = `scaleX(${1.0 - this.ohmWidth / document.body.getBoundingClientRect().width})`;
+		await wait(210);
+		this.pixel.update();
+	}
+	async hideOhm() {
+		this.isOhmShown = false;
+		this.ohmContainer.classList.add('ohmd--collapsed');
+		this.container.classList.remove('ohmd--shrunk');
+		this.ohmContainer.style.left = `-${this.ohmWidth - 15}px`;
+		this.container.style.transform = `scaleX(1.0)`;
+		await wait(210);
+		this.pixel.update();
+	}
+
+
+
+
+	addChartWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
+		const widget = new ChartWidget(this.prefs, this.pixel, {sensor, name});
+		this.addWidget(widget);
+	}
+	addValueWidget(/**@type{String}*/sensor, /**@type{String}*/name) {
+		const widget = new ValueWidget(this.prefs, this.pixel, {sensor, name});
+		this.addWidget(widget);
+	}
+	addTimeWidget() {
+		const widget = new TimeWidget(this.prefs, this.pixel, {});
+		this.addWidget(widget);
+	}
+	addWidget(/**@type{Widget}*/widget) {
+		widget.onUpdate = ()=>this.saveWidgets();
+		widget.onRemove = (w)=>this.removeWidget(w);
+		this.container.append(widget.dom);
+		this.widgets.push(widget);
+		this.saveWidgets();
+	}
+	addWidgetFromConfig(config) {
+		let widget;
+		switch (config.type) {
+			case 'chart': {
+				widget = new ChartWidget(this.prefs, this.pixel, config);
+				break;
+			}
+			case 'value': {
+				widget = new ValueWidget(this.prefs, this.pixel, config);
+				break;
+			}
+			case 'time': {
+				widget = new TimeWidget(this.prefs, this.pixel, config);
+				break;
+			}
+		}
+		widget.onUpdate = ()=>this.saveWidgets();
+		widget.onRemove = (w)=>this.removeWidget(w);
+		this.container.append(widget.dom);
+		this.widgets.push(widget);
+	}
+
+	removeWidget(/**@type{Widget}*/widget) {
+		this.widgets = this.widgets.filter(it=>it!=widget);
+		this.saveWidgets();
+	}
+
+
+	saveWidgets() {
+		localStorage.setItem('ohmd--widgets', JSON.stringify(this.widgets.map(widget=>widget.getConfig())));
+	}
+
+	loadWidgets() {
+		const configs = JSON.parse(localStorage.getItem('ohmd--widgets') || '[]');
+		configs.forEach(config=>{
+			if (config.lineColor && (typeof config.lineColor) == 'string') {
+				config.lineColor = config.lineColor.substring(5, config.lineColor.length-2).split(',');
+			}
+			if (config.fillColor && (typeof config.fillColor) == 'string') {
+				config.fillColor = config.fillColor.substring(5, config.fillColor.length-2).split(',');
+			}
+			this.addWidgetFromConfig(config);
+		});
+	}
+
+
+
+
+	async fetchData() {
+		while (true) {
+			const data = await (await fetch('data.json')).json();
+			this.widgets.forEach(widget=>widget.setData(data));
+			await wait(1000);
+		}
+	}
+}
+// ---------------- /IMPORTS ----------------
+
+
+
+
+
+	const app = new Dashboard();
+	log(app);
 })();
