@@ -50,9 +50,9 @@ export class Dashboard {
 				`repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
 			].join(',');
 		};
-		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
-		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
-		Binding.create(this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
+		Binding.create(this, this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
+		Binding.create(this, this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
+		Binding.create(this, this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
 
 		this.fetchData();
 	}
@@ -100,6 +100,7 @@ export class Dashboard {
 							this.prefs.showGrid = dlg.showGrid;
 							this.prefs.gridSize = dlg.gridSize;
 						}
+						dlg.remove();
 					});
 					buttons.append(settingsBtn);
 				}
@@ -278,5 +279,12 @@ export class Dashboard {
 			this.widgets.forEach(widget=>widget.setData(data));
 			await wait(1000);
 		}
+	}
+
+	get bindings() {
+		return Binding.bindings;
+	}
+	get bindingTargets() {
+		return Binding.targets;
 	}
 }

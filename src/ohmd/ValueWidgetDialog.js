@@ -29,7 +29,7 @@ export class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Name';
-					Binding.create(this, 'name', inp, 'value');
+					Binding.create(this, this, 'name', inp, 'value');
 					lbl.append(inp);
 				}
 				nameRow.append(lbl);
@@ -45,7 +45,7 @@ export class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Color';
-					Binding.create(this, 'color', inp, 'value',
+					Binding.create(this, this, 'color', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -59,7 +59,7 @@ export class ValueWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this, 'color', opacity, 'value',
+					Binding.create(this, this, 'color', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -69,7 +69,7 @@ export class ValueWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Color';
-					Binding.create(this, 'color', picker, 'value',
+					Binding.create(this, this, 'color', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -90,7 +90,7 @@ export class ValueWidgetDialog extends Dialog {
 					inp.placeholder = 'Font Size';
 					inp.min = 1;
 					inp.max = 999;
-					Binding.create(this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				sizeRow.append(lbl);
@@ -106,7 +106,7 @@ export class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Format';
-					Binding.create(this, 'format', inp, 'value');
+					Binding.create(this, this, 'format', inp, 'value');
 					lbl.append(inp);
 				}
 				formatRow.append(lbl);

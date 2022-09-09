@@ -55,6 +55,7 @@ class BindingTarget {
 
 class Binding {
 	/**@type {Binding[]}*/ static bindings = [];
+	/**@type {Object}*/ key;
 	/**@type {Object}*/ source;
 	/**@type {String}*/ propertyName;
 	/**@type {BindingTarget[]}*/ targets = [];
@@ -62,10 +63,10 @@ class Binding {
 	/**@type {Function}*/ theSetter;
 	/**@type {Boolean}*/ isProperty = false;
 	value;
-	static create(source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
+	static create(key, source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
 		let binding = this.bindings.find(it=>it.source==source&&it.propertyName==propertyName);
 		if (!binding) {
-			binding = new Binding(source, propertyName);
+			binding = new Binding(key, source, propertyName);
 			this.bindings.push(binding);
 		}
 		binding.targets.push(new BindingTarget(target, attributeName, targetConverter, sourceConverter));
@@ -92,8 +93,18 @@ class Binding {
 				break;
 			}
 		}
+		return binding;
 	}
-	constructor(source, propertyName) {
+	static remove(/**@type {Object}*/key) {
+		for (let i=this.bindings.length-1; i>=0; i--) {
+			const binding = this.bindings[i];
+			if (binding.key == key) {
+				this.bindings.splice(i, 1);
+			}
+		}
+	}
+	constructor(key, source, propertyName) {
+		this.key = key;
 		this.source = source;
 		this.propertyName = propertyName;
 		
@@ -188,7 +199,7 @@ class Dialog {
 				const header = document.createElement('div'); {
 					this.header = header;
 					header.classList.add('ohmd--dialog--header');
-					Binding.create(this, 'title', header, 'textContent');
+					Binding.create(this, this, 'title', header, 'textContent');
 					content.append(header);
 				}
 				const body = document.createElement('div'); {
@@ -201,14 +212,14 @@ class Dialog {
 					footer.classList.add('ohmd--dialog--footer');
 					const affBtn = document.createElement('button'); {
 						affBtn.classList.add('ohmd--dialog--button--affirmative');
-						Binding.create(this, 'affirmative', affBtn, 'textContent');
+						Binding.create(this, this, 'affirmative', affBtn, 'textContent');
 						affBtn.addEventListener('click', ()=>this.hide(true));
 						footer.append(affBtn);
 					}
 					const negBtn = document.createElement('button'); {
 						negBtn.classList.add('ohmd--dialog--button--negative');
-						Binding.create(this, 'negative', negBtn, 'textContent');
-						Binding.create(this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
+						Binding.create(this, this, 'negative', negBtn, 'textContent');
+						Binding.create(this, this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
 						negBtn.addEventListener('click', ()=>this.hide(false));
 						footer.append(negBtn);
 					}
@@ -277,6 +288,11 @@ class Dialog {
 		this.content.style.transition = '';
 		this.trigger = null;
 	}
+
+	remove() {
+		this.blocker.remove();
+		Binding.remove(this);
+	}
 }
 
 
@@ -333,7 +349,7 @@ class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Name';
-					Binding.create(this.prefs, 'name', inp, 'value');
+					Binding.create(this, this.prefs, 'name', inp, 'value');
 					lbl.append(inp);
 				}
 				nameRow.append(lbl);
@@ -349,7 +365,7 @@ class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Line Color';
-					Binding.create(this.prefs, 'lineColor', inp, 'value',
+					Binding.create(this, this.prefs, 'lineColor', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -363,7 +379,7 @@ class ChartWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this.prefs, 'lineColor', opacity, 'value',
+					Binding.create(this, this.prefs, 'lineColor', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -373,7 +389,7 @@ class ChartWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Line Color';
-					Binding.create(this.prefs, 'lineColor', picker, 'value',
+					Binding.create(this, this.prefs, 'lineColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -392,7 +408,7 @@ class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Fill Color';
-					Binding.create(this.prefs, 'fillColor', inp, 'value',
+					Binding.create(this, this.prefs, 'fillColor', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -406,7 +422,7 @@ class ChartWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this.prefs, 'fillColor', opacity, 'value',
+					Binding.create(this, this.prefs, 'fillColor', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -416,7 +432,7 @@ class ChartWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Fill Color';
-					Binding.create(this.prefs, 'fillColor', picker, 'value',
+					Binding.create(this, this.prefs, 'fillColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -435,7 +451,7 @@ class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'number';
 					inp.placeholder = 'History';
-					Binding.create(this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				historyRow.append(lbl);
@@ -451,7 +467,7 @@ class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'number';
 					inp.placeholder = 'Max Value';
-					Binding.create(this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				maxRow.append(lbl);
@@ -612,7 +628,7 @@ class Widget {
 				header.addEventListener('pointerdown', (evt)=>this.startMove(evt));
 				const title = document.createElement('div'); {
 					title.classList.add('ohmd--widget-title');
-					Binding.create(this, 'name', title, 'textContent');
+					Binding.create(this, this, 'name', title, 'textContent');
 					header.append(title);
 				}
 				const actions = document.createElement('div'); {
@@ -963,6 +979,7 @@ class ChartWidget extends Widget {
 			this.max = dlg.prefs.max;
 			this.fireUpdate();
 		}
+		dlg.remove();
 	}
 
 
@@ -1051,7 +1068,7 @@ class SettingsDialog extends Dialog {
 				const inp = document.createElement('input'); {
 					inp.type = 'checkbox';
 					inp.placeholder = 'Snap to Grid';
-					Binding.create(this, 'snapToGrid', inp, 'checked');
+					Binding.create(this, this, 'snapToGrid', inp, 'checked');
 					lbl.append(inp);
 				}
 				lbl.append(document.createTextNode('Snap to Grid'));
@@ -1066,7 +1083,7 @@ class SettingsDialog extends Dialog {
 				const inp = document.createElement('input'); {
 					inp.type = 'checkbox';
 					inp.placeholder = 'Show Grid';
-					Binding.create(this, 'showGrid', inp, 'checked');
+					Binding.create(this, this, 'showGrid', inp, 'checked');
 					lbl.append(inp);
 				}
 				lbl.append(document.createTextNode('Show Grid'));
@@ -1084,7 +1101,7 @@ class SettingsDialog extends Dialog {
 					inp.max = 999;
 					inp.min = 5;
 					inp.placeholder = 'Grid Size';
-					Binding.create(this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				sizeRow.append(lbl);
@@ -1127,7 +1144,7 @@ class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Name';
-					Binding.create(this, 'name', inp, 'value');
+					Binding.create(this, this, 'name', inp, 'value');
 					lbl.append(inp);
 				}
 				nameRow.append(lbl);
@@ -1143,7 +1160,7 @@ class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Color';
-					Binding.create(this, 'color', inp, 'value',
+					Binding.create(this, this, 'color', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -1157,7 +1174,7 @@ class ValueWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this, 'color', opacity, 'value',
+					Binding.create(this, this, 'color', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -1167,7 +1184,7 @@ class ValueWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Color';
-					Binding.create(this, 'color', picker, 'value',
+					Binding.create(this, this, 'color', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -1188,7 +1205,7 @@ class ValueWidgetDialog extends Dialog {
 					inp.placeholder = 'Font Size';
 					inp.min = 1;
 					inp.max = 999;
-					Binding.create(this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this, 'fontSize', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				sizeRow.append(lbl);
@@ -1204,7 +1221,7 @@ class ValueWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Format';
-					Binding.create(this, 'format', inp, 'value');
+					Binding.create(this, this, 'format', inp, 'value');
 					lbl.append(inp);
 				}
 				formatRow.append(lbl);
@@ -1305,6 +1322,7 @@ class ValueWidget extends Widget {
 			this.format = dlg.format;
 			this.fireUpdate();
 		}
+		dlg.remove();
 	}
 
 
@@ -1455,9 +1473,9 @@ class Dashboard {
 				`repeating-linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 1px, ${bg} 1px, ${bg} ${this.prefs.gridSize}px)`,
 			].join(',');
 		};
-		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
-		Binding.create(this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
-		Binding.create(this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
+		Binding.create(this, this.prefs, 'showGrid', this.container.style, 'backgroundColor', v=>v?'rgb(100,100,100)':'');
+		Binding.create(this, this.prefs, 'showGrid', this.container.style, 'backgroundImage', v=>v?gridBgConverter():'');
+		Binding.create(this, this.prefs, 'gridSize', this.container.style, 'backgroundImage', v=>this.prefs.showGrid?gridBgConverter():'');
 
 		this.fetchData();
 	}
@@ -1505,6 +1523,7 @@ class Dashboard {
 							this.prefs.showGrid = dlg.showGrid;
 							this.prefs.gridSize = dlg.gridSize;
 						}
+						dlg.remove();
 					});
 					buttons.append(settingsBtn);
 				}
@@ -1683,6 +1702,13 @@ class Dashboard {
 			this.widgets.forEach(widget=>widget.setData(data));
 			await wait(1000);
 		}
+	}
+
+	get bindings() {
+		return Binding.bindings;
+	}
+	get bindingTargets() {
+		return Binding.targets;
 	}
 }
 // ---------------- /IMPORTS ----------------

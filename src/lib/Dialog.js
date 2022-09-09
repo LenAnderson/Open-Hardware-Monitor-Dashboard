@@ -38,7 +38,7 @@ export class Dialog {
 				const header = document.createElement('div'); {
 					this.header = header;
 					header.classList.add('ohmd--dialog--header');
-					Binding.create(this, 'title', header, 'textContent');
+					Binding.create(this, this, 'title', header, 'textContent');
 					content.append(header);
 				}
 				const body = document.createElement('div'); {
@@ -51,14 +51,14 @@ export class Dialog {
 					footer.classList.add('ohmd--dialog--footer');
 					const affBtn = document.createElement('button'); {
 						affBtn.classList.add('ohmd--dialog--button--affirmative');
-						Binding.create(this, 'affirmative', affBtn, 'textContent');
+						Binding.create(this, this, 'affirmative', affBtn, 'textContent');
 						affBtn.addEventListener('click', ()=>this.hide(true));
 						footer.append(affBtn);
 					}
 					const negBtn = document.createElement('button'); {
 						negBtn.classList.add('ohmd--dialog--button--negative');
-						Binding.create(this, 'negative', negBtn, 'textContent');
-						Binding.create(this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
+						Binding.create(this, this, 'negative', negBtn, 'textContent');
+						Binding.create(this, this, 'negative', negBtn.style, 'display', v=>v===null?'none':'');
 						negBtn.addEventListener('click', ()=>this.hide(false));
 						footer.append(negBtn);
 					}
@@ -126,5 +126,10 @@ export class Dialog {
 		this.content.style.transform = '';
 		this.content.style.transition = '';
 		this.trigger = null;
+	}
+
+	remove() {
+		this.blocker.remove();
+		Binding.remove(this);
 	}
 }

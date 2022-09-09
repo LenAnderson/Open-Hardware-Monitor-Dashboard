@@ -233,6 +233,7 @@ export class ChartWidget extends Widget {
 			this.max = dlg.prefs.max;
 			this.fireUpdate();
 		}
+		dlg.remove();
 	}
 
 

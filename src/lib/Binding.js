@@ -2,6 +2,7 @@ import { BindingTarget } from "./BindingTarget.js";
 
 export class Binding {
 	/**@type {Binding[]}*/ static bindings = [];
+	/**@type {Object}*/ key;
 	/**@type {Object}*/ source;
 	/**@type {String}*/ propertyName;
 	/**@type {BindingTarget[]}*/ targets = [];
@@ -9,10 +10,10 @@ export class Binding {
 	/**@type {Function}*/ theSetter;
 	/**@type {Boolean}*/ isProperty = false;
 	value;
-	static create(source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
+	static create(key, source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
 		let binding = this.bindings.find(it=>it.source==source&&it.propertyName==propertyName);
 		if (!binding) {
-			binding = new Binding(source, propertyName);
+			binding = new Binding(key, source, propertyName);
 			this.bindings.push(binding);
 		}
 		binding.targets.push(new BindingTarget(target, attributeName, targetConverter, sourceConverter));
@@ -39,8 +40,18 @@ export class Binding {
 				break;
 			}
 		}
+		return binding;
 	}
-	constructor(source, propertyName) {
+	static remove(/**@type {Object}*/key) {
+		for (let i=this.bindings.length-1; i>=0; i--) {
+			const binding = this.bindings[i];
+			if (binding.key == key) {
+				this.bindings.splice(i, 1);
+			}
+		}
+	}
+	constructor(key, source, propertyName) {
+		this.key = key;
 		this.source = source;
 		this.propertyName = propertyName;
 		

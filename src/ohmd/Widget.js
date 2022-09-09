@@ -68,7 +68,7 @@ export class Widget {
 				header.addEventListener('pointerdown', (evt)=>this.startMove(evt));
 				const title = document.createElement('div'); {
 					title.classList.add('ohmd--widget-title');
-					Binding.create(this, 'name', title, 'textContent');
+					Binding.create(this, this, 'name', title, 'textContent');
 					header.append(title);
 				}
 				const actions = document.createElement('div'); {

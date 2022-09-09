@@ -25,7 +25,7 @@ export class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'text';
 					inp.placeholder = 'Name';
-					Binding.create(this.prefs, 'name', inp, 'value');
+					Binding.create(this, this.prefs, 'name', inp, 'value');
 					lbl.append(inp);
 				}
 				nameRow.append(lbl);
@@ -41,7 +41,7 @@ export class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Line Color';
-					Binding.create(this.prefs, 'lineColor', inp, 'value',
+					Binding.create(this, this.prefs, 'lineColor', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -55,7 +55,7 @@ export class ChartWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this.prefs, 'lineColor', opacity, 'value',
+					Binding.create(this, this.prefs, 'lineColor', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -65,7 +65,7 @@ export class ChartWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Line Color';
-					Binding.create(this.prefs, 'lineColor', picker, 'value',
+					Binding.create(this, this.prefs, 'lineColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -84,7 +84,7 @@ export class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input');
 					inp.type = 'text';
 					inp.placeholder = 'Fill Color';
-					Binding.create(this.prefs, 'fillColor', inp, 'value',
+					Binding.create(this, this.prefs, 'fillColor', inp, 'value',
 						v=>v.slice(0,3).join(' '),
 						v=>[...v.split(' '), parseInt(opacity.value)/100],
 					);
@@ -98,7 +98,7 @@ export class ChartWidgetDialog extends Dialog {
 					opacity.placeholder = 'Opacity';
 					opacity.max = 100;
 					opacity.min = 0;
-					Binding.create(this.prefs, 'fillColor', opacity, 'value',
+					Binding.create(this, this.prefs, 'fillColor', opacity, 'value',
 						v=>v.slice(-1)*100,
 						v=>[...inp.value.split(' '), parseInt(v)/100]
 					);
@@ -108,7 +108,7 @@ export class ChartWidgetDialog extends Dialog {
 				const picker = document.createElement('input'); {
 					picker.type = 'color';
 					picker.placeholder = 'Fill Color';
-					Binding.create(this.prefs, 'fillColor', picker, 'value',
+					Binding.create(this, this.prefs, 'fillColor', picker, 'value',
 						v=>`#${v.slice(0,3).map(it=>`00${parseInt(it).toString(16)}`.slice(-2)).join('')}`,
 						v=>[parseInt(v.substring(1,3), 16), parseInt(v.substring(3,5), 16), parseInt(v.substring(5,7), 16), parseInt(opacity.value)/100]
 					);
@@ -127,7 +127,7 @@ export class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'number';
 					inp.placeholder = 'History';
-					Binding.create(this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this.prefs, 'history', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				historyRow.append(lbl);
@@ -143,7 +143,7 @@ export class ChartWidgetDialog extends Dialog {
 					inp.classList.add('ohmd--input--long');
 					inp.type = 'number';
 					inp.placeholder = 'Max Value';
-					Binding.create(this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this.prefs, 'max', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				maxRow.append(lbl);

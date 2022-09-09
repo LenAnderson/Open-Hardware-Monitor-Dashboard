@@ -87,6 +87,7 @@ export class ValueWidget extends Widget {
 			this.format = dlg.format;
 			this.fireUpdate();
 		}
+		dlg.remove();
 	}
 
 

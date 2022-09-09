@@ -26,7 +26,7 @@ export class SettingsDialog extends Dialog {
 				const inp = document.createElement('input'); {
 					inp.type = 'checkbox';
 					inp.placeholder = 'Snap to Grid';
-					Binding.create(this, 'snapToGrid', inp, 'checked');
+					Binding.create(this, this, 'snapToGrid', inp, 'checked');
 					lbl.append(inp);
 				}
 				lbl.append(document.createTextNode('Snap to Grid'));
@@ -41,7 +41,7 @@ export class SettingsDialog extends Dialog {
 				const inp = document.createElement('input'); {
 					inp.type = 'checkbox';
 					inp.placeholder = 'Show Grid';
-					Binding.create(this, 'showGrid', inp, 'checked');
+					Binding.create(this, this, 'showGrid', inp, 'checked');
 					lbl.append(inp);
 				}
 				lbl.append(document.createTextNode('Show Grid'));
@@ -59,7 +59,7 @@ export class SettingsDialog extends Dialog {
 					inp.max = 999;
 					inp.min = 5;
 					inp.placeholder = 'Grid Size';
-					Binding.create(this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
+					Binding.create(this, this, 'gridSize', inp, 'value', v=>v, v=>parseInt(v));
 					lbl.append(inp);
 				}
 				sizeRow.append(lbl);
