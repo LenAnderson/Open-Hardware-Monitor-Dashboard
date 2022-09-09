@@ -1396,7 +1396,8 @@ class TimeWidget extends ValueWidget {
 
 
 	setData(data) {
-		this.value.textContent = new Date().toISOString().split('T')[1].split(':').slice(0,2).join(':');
+		const d = new Date();
+		this.value.textContent = `${`00${d.getHours()}`.slice(-2)}:${`00${d.getMinutes()}`.slice(-2)}`;
 	}
 }
 
