@@ -32,16 +32,19 @@ const wait = async(millis)=>(new Promise(resolve=>setTimeout(resolve,millis)));
 
 // src\lib\BindingTarget.js
 class BindingTarget {
+	/**@type {Object}*/ key;
 	/**@type {HTMLElement}*/ target;
 	/**@type {String}*/ attributeName;
 	/**@type {Function}*/ targetConverter;
 	/**@type {Function}*/ sourceConverter;
 	constructor(
+		/**@type {Object}*/ key,
 		/**@type {HTMLElement}*/ target,
 		/**@type {String}*/ attributeName,
 		/**@type {Function}*/ targetConverter,
 		/**@type {Function}*/ sourceConverter
 	) {
+		this.key = key;
 		this.target = target;
 		this.attributeName = attributeName;
 		this.targetConverter = targetConverter;
@@ -55,7 +58,6 @@ class BindingTarget {
 
 class Binding {
 	/**@type {Binding[]}*/ static bindings = [];
-	/**@type {Object}*/ key;
 	/**@type {Object}*/ source;
 	/**@type {String}*/ propertyName;
 	/**@type {BindingTarget[]}*/ targets = [];
@@ -66,10 +68,10 @@ class Binding {
 	static create(key, source, propertyName, target, attributeName, targetConverter=v=>v, sourceConverter=v=>v) {
 		let binding = this.bindings.find(it=>it.source==source&&it.propertyName==propertyName);
 		if (!binding) {
-			binding = new Binding(key, source, propertyName);
+			binding = new Binding(source, propertyName);
 			this.bindings.push(binding);
 		}
-		binding.targets.push(new BindingTarget(target, attributeName, targetConverter, sourceConverter));
+		binding.targets.push(new BindingTarget(key, target, attributeName, targetConverter, sourceConverter));
 		binding.setTargetValue();
 		switch (target.tagName) {
 			case 'TEXTAREA':
@@ -98,13 +100,19 @@ class Binding {
 	static remove(/**@type {Object}*/key) {
 		for (let i=this.bindings.length-1; i>=0; i--) {
 			const binding = this.bindings[i];
-			if (binding.key == key) {
+			for (let ii=binding.targets.length-1; ii>=0; ii--) {
+				const target = binding.targets[ii]
+				if (target.key == key) {
+					binding.targets.splice(ii, 1);
+				}
+			}
+			if (binding.targets.length == 0) {
 				this.bindings.splice(i, 1);
 			}
 		}
 	}
-	constructor(key, source, propertyName) {
-		this.key = key;
+	
+	constructor(source, propertyName) {
 		this.source = source;
 		this.propertyName = propertyName;
 		
