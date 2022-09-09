@@ -279,11 +279,4 @@ export class Dashboard {
 			await wait(1000);
 		}
 	}
-
-	get bindings() {
-		return Binding.bindings;
-	}
-	get bindingTargets() {
-		return Binding.targets;
-	}
 }
