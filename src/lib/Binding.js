@@ -70,10 +70,12 @@ export class Binding {
 			this.theGetter = ()=>this.value;
 			this.theSetter = (value)=>this.value=value;
 		}
-		Object.defineProperty(source, propertyName, {
-			get: this.getter.bind(this),
-			set: this.setter.bind(this)
-		});
+		if (Object.getOwnPropertyNames(source).indexOf(propertyName) == -1) {
+			Object.defineProperty(source, propertyName, {
+				get: this.getter.bind(this),
+				set: this.setter.bind(this)
+			});
+		}
 		this.setTargetValue();
 	}
 	getter() {
