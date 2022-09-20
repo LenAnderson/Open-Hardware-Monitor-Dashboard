@@ -1,4 +1,5 @@
 import { log } from "../lib/basics.js";
+import { Binding } from "../lib/Binding.js";
 import { ChartWidgetDialog } from "./ChartWidgetDialog.js";
 import { ChartWidgetPreferences } from "./ChartWidgetPreferences.js";
 import { Widget } from "./Widget.js";
@@ -66,6 +67,8 @@ export class ChartWidget extends Widget {
 		width:400,
 		height:300
 	};
+
+	/**@type{HTMLDivElement}*/ sizeHint;
 
 	data;
 
@@ -188,6 +191,13 @@ export class ChartWidget extends Widget {
 			this.resizeOrigin.height = this.height;
 			this.pointerOffset.left = this.resizeOrigin.left - this.pixel.x(evt.clientX);
 			this.pointerOffset.top = this.resizeOrigin.top - evt.clientY;
+			const sizeHint = document.createElement('div'); {
+				this.sizeHint = sizeHint;
+				sizeHint.classList.add('ohmd--sizeHint');
+				Binding.create(sizeHint, this, 'width', sizeHint, 'textContent', v=>`${this.width}x${this.height}`);
+				Binding.create(sizeHint, this, 'height', sizeHint, 'textContent', v=>`${this.width}x${this.height}`);
+				this.dom.append(sizeHint);
+			}
 		}
 	}
 	resize(/**@type{PointerEvent}**/evt) {
@@ -200,6 +210,9 @@ export class ChartWidget extends Widget {
 		this.isResizing = false;
 		this.dom.classList.remove('ohmd--hovered');
 		this.fireUpdate();
+		Binding.remove(this.sizeHint);
+		this.sizeHint.remove();
+		this.sizeHint = null;
 	}
 
 

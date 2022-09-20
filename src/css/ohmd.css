@@ -147,6 +147,15 @@ body {
   background-image: repeating-linear-gradient(0deg, #000000, #000000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3px);
   transform: rotate(-45deg) translateX(4px) translateY(6px);
 }
+.ohmd--container > .ohmd--widget > .ohmd--sizeHint {
+  background-color: #8c8c8c;
+  border-radius: 5px;
+  font-size: 1.5em;
+  padding: 0.25em;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
 .ohmd--dialog--blocker {
   align-items: center;
   background-color: rgba(0 0 0 / 0%);
