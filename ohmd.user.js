@@ -106,9 +106,9 @@ class Binding {
 					binding.targets.splice(ii, 1);
 				}
 			}
-			if (binding.targets.length == 0) {
-				this.bindings.splice(i, 1);
-			}
+			// if (binding.targets.length == 0) {
+			// 	this.bindings.splice(i, 1);
+			// }
 		}
 	}
 	
@@ -126,12 +126,10 @@ class Binding {
 			this.theGetter = ()=>this.value;
 			this.theSetter = (value)=>this.value=value;
 		}
-		if (Object.getOwnPropertyNames(source).indexOf(propertyName) == -1) {
-			Object.defineProperty(source, propertyName, {
-				get: this.getter.bind(this),
-				set: this.setter.bind(this)
-			});
-		}
+		Object.defineProperty(source, propertyName, {
+			get: this.getter.bind(this),
+			set: this.setter.bind(this)
+		});
 		this.setTargetValue();
 	}
 	getter() {
