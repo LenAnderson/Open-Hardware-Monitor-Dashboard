@@ -30,9 +30,13 @@ export class Dashboard {
 
 
 	constructor() {
+		this.init();
+	}
+
+	async init() {
 		this.prefs = new Preferences();
 		this.prefs.load();
-		this.buildDom();
+		await this.buildDom();
 		this.pixel = new PixelService(this.container);
 
 		this.modifyOhmDom();
@@ -57,10 +61,15 @@ export class Dashboard {
 	}
 
 
-	buildDom() {
+	async buildDom() {
 		this.ohmHeader = $('.header');
 		this.ohmMain = $('.main');
-		this.ohmWidth = $(this.ohmMain, '.treeTable').getBoundingClientRect().width + 40 + 15;
+		let treeTable;
+		while (!treeTable) {
+			await wait(100);
+			treeTable = $(this.ohmMain, '.treeTable');
+		}
+		this.ohmWidth = treeTable.getBoundingClientRect().width + 40 + 15;
 
 		const style = document.createElement('style'); {
 			style.innerHTML = '${include-min-esc: ../css/ohmd.css}';
